@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Represents a business lead discovered by the system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Business name" },
+        "description": { "type": "string", "description": "Business description" },
+        "location": { "type": "string", "description": "City or area" },
+        "website": { "type": "string", "format": "uri" },
+        "instagram": { "type": "string", "description": "Instagram profile URL" },
+        "whatsapp": { "type": "string", "description": "WhatsApp number or link" },
+        "status": { 
+          "type": "string", 
+          "enum": ["discovered", "verified", "qualified", "contacted", "rejected"] 
+        },
+        "hasWebsite": { "type": "boolean" },
+        "strongSocialPresence": { "type": "boolean" },
+        "sourceQuery": { "type": "string", "description": "The search query that found this lead" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string", "description": "Owner of the lead" }
+      },
+      "required": ["name", "location", "status", "userId"]
+    },
+    "SearchRequest": {
+      "title": "Search Request",
+      "description": "A natural language search request for leads.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "query": { "type": "string" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "processing", "completed", "failed"] 
+        },
+        "targetCount": { "type": "integer" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["query", "status", "userId"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of business leads"
+    },
+    "/searchRequests/{requestId}": {
+      "schema": "SearchRequest",
+      "description": "History of lead search requests"
+    }
+  }
+}
