@@ -14,10 +14,12 @@
         "whatsapp": { "type": "string", "description": "WhatsApp number or link" },
         "status": { 
           "type": "string", 
-          "enum": ["discovered", "verified", "qualified", "contacted", "rejected"] 
+          "enum": ["new", "discovered", "verified", "qualified", "contacted", "lost", "unqualified", "rejected"] 
         },
         "hasWebsite": { "type": "boolean" },
         "strongSocialPresence": { "type": "boolean" },
+        "notes": { "type": "string", "description": "Conversation details or follow-up reminders" },
+        "followUpDate": { "type": "string", "description": "Scheduled reminder or follow-up date" },
         "sourceQuery": { "type": "string", "description": "The search query that found this lead" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },

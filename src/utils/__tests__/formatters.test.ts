@@ -46,6 +46,17 @@ describe('formatters utility', () => {
         'srinagar_couture'
       );
       expect(extractInstagramHandle('instagram.com/boutique_style')).toBe('boutique_style');
+      expect(extractInstagramHandle('https://www.instagram.com/poshkaarkashmir/?hl=en')).toBe(
+        'poshkaarkashmir'
+      );
+      expect(extractInstagramHandle('https://instagram.com/zariposhak?igsh=12345')).toBe(
+        'zariposhak'
+      );
+    });
+
+    it('cleans spaces and special characters', () => {
+      expect(extractInstagramHandle('kashmir loom')).toBe('kashmirloom');
+      expect(extractInstagramHandle('@tilla_kashmir.')).toBe('tilla_kashmir');
     });
 
     it('handles empty input gracefully', () => {

@@ -1,9 +1,11 @@
 export type LeadStatus =
+  | 'new'
   | 'discovered'
   | 'enriching'
   | 'verified'
   | 'qualified'
   | 'contacted'
+  | 'lost'
   | 'unqualified';
 
 export type WebsiteStatus = 'active' | 'broken' | 'none' | 'unreachable';
@@ -76,6 +78,8 @@ export interface Lead {
   qualificationReasons: string[];
   opportunity: SalesOpportunity;
   pitches: WhatsAppPitch[];
+  notes?: string;
+  followUpDate?: string;
   sourceQuery?: string;
   userId: string;
   createdAt: string;
@@ -92,6 +96,9 @@ export interface QueryIntent {
     strongSocialPresence: boolean;
     preferredPlatform?: string;
   };
+  excludeNames?: string[];
+  excludeHandles?: string[];
+  generationSeed?: number;
 }
 
 export type PipelineStage =

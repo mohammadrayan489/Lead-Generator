@@ -39,7 +39,7 @@ export function getLeadFingerprints(lead: Partial<Lead>): string[] {
     }
   }
 
-  const igHandle = lead.social?.instagram?.handle || extractInstagramHandle(lead.social?.instagram?.url);
+  const igHandle = extractInstagramHandle(lead.social?.instagram?.handle || lead.social?.instagram?.url);
   if (igHandle) {
     keys.push(`ig:${igHandle.toLowerCase()}`);
   }
@@ -140,3 +140,31 @@ export function deduplicateLeads(leads: Lead[]): Lead[] {
 
   return result;
 }
+
+/**
+ * Filters out candidate leads that already match existing leads in the user's database,
+ * using multi-factor fingerprint matching (name+city, phone, instagram handle, website).
+ */
+export function filterOutExistingLeads(candidates: Lead[], existingLeads: Lead[]): Lead[] {
+  if (!existingLeads || existingLeads.length === 0) {
+    return candidates;
+  }
+
+  const existingFingerprints = new Set<string>();
+  for (const existing of existingLeads) {
+    for (const fp of getLeadFingerprints(existing)) {
+      existingFingerprints.add(fp);
+    }
+  }
+
+  return candidates.filter((candidate) => {
+    const fps = getLeadFingerprints(candidate);
+    for (const fp of fps) {
+      if (existingFingerprints.has(fp)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+

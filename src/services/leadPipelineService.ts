@@ -1,6 +1,8 @@
 import { Lead, QueryIntent, PipelineProgressState } from '../types/lead';
-import { deduplicateLeads } from '../utils/deduplicateLeads';
+import { deduplicateLeads, filterOutExistingLeads } from '../utils/deduplicateLeads';
 import { calculateLeadQualification } from '../utils/qualificationScore';
+import { extractInstagramHandle } from '../utils/formatters';
+import { generateDiverseLeadCandidates, normalizeJKCity } from './leadGeneratorPool';
 import { generateWhatsAppPitch } from './pitchService';
 import { leadService } from './leadService';
 
@@ -17,6 +19,10 @@ class ProviderRegistry {
 
   register(provider: SearchSourceProvider) {
     this.providers.set(provider.name, provider);
+  }
+
+  unregister(name: string) {
+    this.providers.delete(name);
   }
 
   get(name: string): SearchSourceProvider | undefined {
@@ -42,7 +48,12 @@ export class AiLeadDiscoveryProvider implements SearchSourceProvider {
         const response = await fetch('/api/leads/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ intent }),
+          body: JSON.stringify({
+            intent,
+            existingNames: intent.excludeNames,
+            existingHandles: intent.excludeHandles,
+            seed: intent.generationSeed,
+          }),
         });
 
         if (response.ok) {
@@ -53,8 +64,10 @@ export class AiLeadDiscoveryProvider implements SearchSourceProvider {
               category: item.category || intent.businessCategory,
               description: item.description,
               location: {
-                city: item.city || intent.targetLocation,
+                city: item.city || intent.targetLocation || 'Srinagar',
                 address: item.address,
+                state: 'Jammu & Kashmir',
+                country: 'India',
               },
               phone: item.phone,
               email: item.email,
@@ -66,69 +79,52 @@ export class AiLeadDiscoveryProvider implements SearchSourceProvider {
               social: {
                 hasStrongSocialPresence: Boolean(item.hasStrongSocialPresence ?? item.instagramHandle),
                 instagram: item.instagramHandle ? {
-                  handle: item.instagramHandle,
+                  handle: extractInstagramHandle(item.instagramHandle),
                   followersCount: item.followersCount || 4500,
-                  engagementRate: 3.2,
-                  isActive: true,
+                  hasHighEngagement: true,
                 } : undefined,
               },
             }));
           }
         }
       } catch (err) {
-        console.warn('Backend search API unavailable, using fallback source:', err);
+        console.warn('Backend search API unavailable, using diversified fallback source:', err);
       }
     }
 
-    // Authentic fallback leads tailored to intent
-    const city = intent.targetLocation || 'Srinagar';
-    const isFashion = /fashion|cloth|shawl|boutique|wear|dress/i.test(intent.businessCategory);
+    // Authentic, diversified fallback leads strictly from Jammu and Kashmir
+    const city = normalizeJKCity(intent.targetLocation);
+    const fallbackCount = Math.min(50, Math.max(5, intent.targetCount || 20));
+    const diverseCandidates = generateDiverseLeadCandidates(
+      { ...intent, targetLocation: city },
+      fallbackCount,
+      intent.excludeNames,
+      intent.excludeHandles
+    );
 
-    const candidates = isFashion
-      ? [
-          { name: 'Kashmiri Pashmina & Loom Emporium', address: 'Polo View Market, The Bund', handle: 'kashmiripashmina.official', followers: 18400, phone: '+91 94190 12345' },
-          { name: 'Chinar Silk & Heritage Shawls', address: 'Lal Chowk Commercial Complex', handle: 'chinarsilks_sgr', followers: 14200, phone: '+91 94190 23456' },
-          { name: 'Noor Kashmiri Bridal Couture', address: 'Residency Road, Munshi Bagh', handle: 'noorcouture_kashmir', followers: 29800, phone: '+91 94190 34567' },
-          { name: 'Zoon Silk Boutique & Handlooms', address: 'Rajbagh Market', handle: 'zoonsilks_srinagar', followers: 12100, phone: '+91 94190 45678' },
-          { name: 'Pehraan Traditional Fashion House', address: 'Karan Nagar Square', handle: 'pehraan.kashmir', followers: 22400, phone: '+91 94190 56789' },
-          { name: 'Rozal Tilla & Aari Studio', address: 'Jawahar Nagar Extension', handle: 'rozalcreations_sgr', followers: 16700, phone: '+91 94190 67890' },
-          { name: 'Sheen Valley Woolen Crafts', address: 'Sara City Mall, 2nd Floor', handle: 'sheen_woolens', followers: 9400, phone: '+91 94190 78901' },
-          { name: 'Kashmir Pashm Atelier', address: 'Khanyar Near Dastgeer Sahib', handle: 'pashm_atelier', followers: 31200, phone: '+91 94190 89012' },
-          { name: 'Valley Vogue Designer Studio', address: 'Hyderpora Bypass Road', handle: 'valleyvogue_sgr', followers: 8900, phone: '+91 94190 90123' },
-          { name: 'Gulmarg Wool & Tweed House', address: 'Lambert Lane, Residency Road', handle: 'gulmargwools', followers: 11500, phone: '+91 94190 01234' },
-          { name: 'Aabshar Hand-Embroidered Suits', address: 'Sanat Nagar Commercial Hub', handle: 'aabshar_embroidery', followers: 19800, phone: '+91 94191 12345' },
-          { name: 'Himalayan Loom & Crafts', address: 'Alamgari Bazar, Old City', handle: 'himalayanlooms', followers: 7600, phone: '+91 94191 23456' },
-        ]
-      : [
-          { name: `${city} Central ${intent.businessCategory}`, address: `Main Commercial Complex, ${city}`, handle: `${city.toLowerCase()}_${intent.businessCategory.toLowerCase().slice(0, 8)}`, followers: 12500, phone: '+91 98765 43210' },
-          { name: `Apex ${intent.businessCategory} Studio`, address: `Market Road, ${city}`, handle: `apex_${intent.businessCategory.toLowerCase().slice(0, 8)}`, followers: 8900, phone: '+91 98765 43211' },
-          { name: `Heritage ${intent.businessCategory} Co.`, address: `Old Quarter, ${city}`, handle: `heritage_${city.toLowerCase()}`, followers: 15400, phone: '+91 98765 43212' },
-          { name: `Elite ${intent.businessCategory} Hub`, address: `Sector 4 Plaza, ${city}`, handle: `elite_${city.toLowerCase()}`, followers: 23100, phone: '+91 98765 43213' },
-        ];
-
-    return candidates.map((item) => ({
+    return diverseCandidates.map((item) => ({
       name: item.name,
-      category: intent.businessCategory,
-      description: `Authentic ${intent.businessCategory} business based in ${city}, specializing in local artisan products and direct customer service.`,
+      category: item.category || intent.businessCategory,
+      description: item.description,
       location: {
-        city: city,
+        city: item.city || city,
         address: item.address,
         state: 'Jammu & Kashmir',
         country: 'India',
       },
       phone: item.phone,
       website: {
-        hasWebsite: intent.filters.noWebsite ? false : false,
-        status: 'none',
+        hasWebsite: Boolean(item.hasWebsite),
+        url: item.websiteUrl,
+        status: item.hasWebsite ? 'active' : 'none',
       },
       social: {
-        hasStrongSocialPresence: true,
-        instagram: {
-          handle: item.handle,
-          followersCount: item.followers,
-          engagementRate: 3.5,
-          isActive: true,
-        },
+        hasStrongSocialPresence: item.hasStrongSocialPresence,
+        instagram: item.instagramHandle ? {
+          handle: extractInstagramHandle(item.instagramHandle),
+          followersCount: item.followersCount,
+          hasHighEngagement: true,
+        } : undefined,
       },
     }));
   }
@@ -143,6 +139,7 @@ providerRegistry.register(new AiLeadDiscoveryProvider());
 export class LeadPipelineService {
   /**
    * Step 1: Understand natural language query via backend AI API.
+   * Explicitly specialized for Jammu & Kashmir business prospecting.
    */
   async parseQueryIntent(query: string): Promise<QueryIntent> {
     if (typeof window !== 'undefined') {
@@ -155,11 +152,12 @@ export class LeadPipelineService {
 
         if (response.ok) {
           const data = await response.json();
+          const parsedCity = normalizeJKCity(data.location || query);
           return {
             originalQuery: query,
-            businessCategory: data.businessType || 'General Business',
-            targetLocation: data.location || 'Unknown',
-            targetCount: data.count || 20,
+            businessCategory: data.businessType || 'Local Business',
+            targetLocation: `${parsedCity}, Jammu & Kashmir`,
+            targetCount: data.count || 25,
             filters: {
               noWebsite: Boolean(data.filters?.noWebsite),
               strongSocialPresence: Boolean(data.filters?.strongSocialPresence),
@@ -178,18 +176,21 @@ export class LeadPipelineService {
     const countMatch = query.match(/\b(\d+)\b/);
     const count = countMatch ? parseInt(countMatch[1], 10) : 25;
 
-    // Simple location extraction heuristic (e.g. "in Srinagar")
-    const locationMatch = query.match(/\bin\s+([A-Za-z\s]+?)(?:\s+with|\s+and|\s*$)/i);
-    const location = locationMatch ? locationMatch[1].trim() : 'Target Area';
+    // Detect J&K location or normalize to Srinagar / Jammu
+    const detectedCity = normalizeJKCity(query);
+    const targetLocation = `${detectedCity}, Jammu & Kashmir`;
 
-    // Simple category extraction
-    const categoryMatch = query.match(/(\d+\s+)?([A-Za-z\s]+?)\s+(?:businesses|shops|stores|places|agencies)/i);
-    const category = categoryMatch && categoryMatch[2] ? categoryMatch[2].trim() : 'Businesses';
+    // Category extraction heuristic
+    const categoryMatch = query.match(/(?:find\s+\d+\s+)?([A-Za-z\s&]+?)(?:\s+in\s+|\s+with|\s+without|\s+shops|\s+businesses|\s*$)/i);
+    let category = categoryMatch && categoryMatch[1] ? categoryMatch[1].trim() : 'Local Businesses';
+    if (category.toLowerCase().startsWith('find ')) {
+      category = category.replace(/^find\s+\d*\s*/i, '').trim();
+    }
 
     return {
       originalQuery: query,
-      businessCategory: category,
-      targetLocation: location,
+      businessCategory: category || 'Local Businesses',
+      targetLocation,
       targetCount: Math.min(100, Math.max(5, count)),
       filters: {
         noWebsite: isNoWebsite,
@@ -199,6 +200,7 @@ export class LeadPipelineService {
     };
   }
 
+
   /**
    * Executes the full pipeline with live status updates.
    */
@@ -207,6 +209,19 @@ export class LeadPipelineService {
     userId: string,
     onProgress?: (state: PipelineProgressState) => void
   ): Promise<Lead[]> {
+    // 0. Fetch existing leads to guarantee every generation run yields different, unique leads
+    let existingLeads: Lead[] = [];
+    try {
+      existingLeads = await leadService.getAllLeads(userId);
+    } catch {
+      existingLeads = [];
+    }
+
+    const excludeNames = existingLeads.map((l) => l.name);
+    const excludeHandles = existingLeads
+      .map((l) => l.social?.instagram?.handle)
+      .filter(Boolean) as string[];
+
     // 1. Understand request
     onProgress?.({
       stage: 'understanding',
@@ -218,6 +233,9 @@ export class LeadPipelineService {
     });
 
     const intent = await this.parseQueryIntent(query);
+    intent.excludeNames = excludeNames;
+    intent.excludeHandles = excludeHandles;
+    intent.generationSeed = Date.now();
 
     // 2. Searching & Querying Sources
     onProgress?.({
@@ -307,8 +325,12 @@ export class LeadPipelineService {
           hasWebsite: false,
           status: 'none',
         },
-        social: raw.social || {
-          hasStrongSocialPresence: false,
+        social: {
+          hasStrongSocialPresence: Boolean(raw.social?.hasStrongSocialPresence),
+          instagram: raw.social?.instagram ? {
+            ...raw.social.instagram,
+            handle: extractInstagramHandle(raw.social.instagram.handle),
+          } : undefined,
         },
         status: 'discovered',
         qualificationScore: 0,
@@ -339,7 +361,70 @@ export class LeadPipelineService {
       intent,
     });
 
-    const uniqueLeads = deduplicateLeads(mappedLeads);
+    const uniqueBatchLeads = deduplicateLeads(mappedLeads);
+    // Filter out candidates that already exist in the user's workspace/database
+    let uniqueLeads = filterOutExistingLeads(uniqueBatchLeads, existingLeads);
+
+    // If filtering left us below the target count, replenish with guaranteed unique fresh leads
+    const targetLeadCount = Math.min(100, Math.max(5, intent.targetCount || 15));
+    if (uniqueLeads.length < targetLeadCount) {
+      const neededCount = targetLeadCount - uniqueLeads.length;
+      const currentExcludedNames = [...excludeNames, ...uniqueLeads.map((l) => l.name)];
+      const currentExcludedHandles = [
+        ...excludeHandles,
+        ...uniqueLeads.map((l) => l.social?.instagram?.handle).filter(Boolean) as string[],
+      ];
+      const freshCandidates = generateDiverseLeadCandidates(
+        intent,
+        neededCount,
+        currentExcludedNames,
+        currentExcludedHandles
+      );
+
+      for (let i = 0; i < freshCandidates.length; i++) {
+        const item = freshCandidates[i];
+        const now = new Date().toISOString();
+        uniqueLeads.push({
+          id: `lead_${Date.now()}_dyn_${i}`,
+          name: item.name,
+          category: item.category || intent.businessCategory,
+          description: item.description,
+          location: {
+            city: item.city || intent.targetLocation,
+            address: item.address,
+            state: 'Jammu & Kashmir',
+            country: 'India',
+          },
+          phone: item.phone,
+          website: {
+            hasWebsite: Boolean(item.hasWebsite),
+            url: item.websiteUrl,
+            status: item.hasWebsite ? 'active' : 'none',
+          },
+          social: {
+            hasStrongSocialPresence: item.hasStrongSocialPresence,
+            instagram: item.instagramHandle ? {
+              handle: extractInstagramHandle(item.instagramHandle),
+              followersCount: item.followersCount,
+              hasHighEngagement: true,
+            } : undefined,
+          },
+          status: 'discovered',
+          qualificationScore: 0,
+          qualificationReasons: [],
+          opportunity: {
+            hasHighPotential: false,
+            opportunityType: 'general',
+            summary: 'Pending evaluation',
+          },
+          pitches: [],
+          sourceQuery: query,
+          userId,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
 
     // 8. Qualifying sales opportunities & 9. Generating pitches
     onProgress?.({

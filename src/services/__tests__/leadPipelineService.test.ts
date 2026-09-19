@@ -51,5 +51,30 @@ describe('leadPipelineService', () => {
     expect(found).toBeDefined();
     expect(found?.status).toBe('qualified');
     expect(found?.pitches.length).toBeGreaterThan(0);
+
+    providerRegistry.unregister('test_places_provider');
+  });
+
+  it('generates different leads across consecutive runs and excludes already generated leads', async () => {
+    const testUser = `user_diversity_${Date.now()}`;
+    const batch1 = await leadPipeline.runPipeline(
+      'Find 5 fashion boutiques in Srinagar',
+      testUser
+    );
+    expect(batch1.length).toBeGreaterThanOrEqual(5);
+
+    const batch2 = await leadPipeline.runPipeline(
+      'Find 5 fashion boutiques in Srinagar',
+      testUser
+    );
+    expect(batch2.length).toBeGreaterThanOrEqual(5);
+
+    // Verify that batch2 leads are different and not identical to batch1 leads
+    const batch1Names = new Set(batch1.map((l) => l.name.toLowerCase().trim()));
+    const duplicatesInBatch2 = batch2.filter((l) =>
+      batch1Names.has(l.name.toLowerCase().trim())
+    );
+
+    expect(duplicatesInBatch2.length).toBe(0);
   });
 });

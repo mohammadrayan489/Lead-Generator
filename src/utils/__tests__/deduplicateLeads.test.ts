@@ -4,6 +4,7 @@ import {
   getLeadFingerprints,
   mergeLeads,
   deduplicateLeads,
+  filterOutExistingLeads,
 } from '../deduplicateLeads';
 import { Lead } from '../../types/lead';
 
@@ -106,6 +107,29 @@ describe('deduplicateLeads utility', () => {
 
       const unique = deduplicateLeads([lead1, lead2]);
       expect(unique.length).toBe(1);
+    });
+  });
+
+  describe('filterOutExistingLeads', () => {
+    it('filters out candidates matching existing database leads by name or handle', () => {
+      const existing = [
+        mockLead({ id: 'ex1', name: 'Poshkaar Kashmir', social: { hasStrongSocialPresence: true, instagram: { handle: 'poshkaarkashmir' } } }),
+        mockLead({ id: 'ex2', name: 'Zari Poshak Handcrafted Tilla', phone: '+919797089123' }),
+      ];
+
+      const candidates = [
+        mockLead({ id: 'c1', name: 'Poshkaar Kashmir', social: { hasStrongSocialPresence: true, instagram: { handle: 'poshkaarkashmir' } } }),
+        mockLead({ id: 'c2', name: 'Brand New Kashmir Boutique', social: { hasStrongSocialPresence: true, instagram: { handle: 'newboutique' } } }),
+        mockLead({ id: 'c3', name: 'Another Shop', phone: '+919797089123' }),
+        mockLead({ id: 'c4', name: 'Unique Kashmiri Atelier', social: { hasStrongSocialPresence: true, instagram: { handle: 'uniqueatelier' } } }),
+      ];
+
+      const filtered = filterOutExistingLeads(candidates, existing);
+      expect(filtered.length).toBe(2);
+      expect(filtered.map((l) => l.name)).toEqual([
+        'Brand New Kashmir Boutique',
+        'Unique Kashmiri Atelier',
+      ]);
     });
   });
 });

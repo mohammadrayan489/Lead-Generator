@@ -1,6 +1,7 @@
 {
   "name": "Lead-Generator",
-  "description": "AI-powered business lead research and sales workspace for finding and qualifying leads.",
+  "description": "AI-powered business lead research and sales workspace specialized for Jammu & Kashmir.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
+

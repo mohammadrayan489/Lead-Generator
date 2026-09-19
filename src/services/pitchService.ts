@@ -2,6 +2,7 @@ import { Lead, WhatsAppPitch } from '../types/lead';
 
 /**
  * Generates a high-converting, personalized WhatsApp pitch for a business lead.
+ * Positioned from an independent new freelancer, offering a custom design preview.
  */
 export function generateWhatsAppPitch(lead: Lead): WhatsAppPitch {
   const firstNameOrBiz = lead.name.split(' ')[0] || lead.name;
@@ -15,28 +16,28 @@ export function generateWhatsAppPitch(lead: Lead): WhatsAppPitch {
     case 'needs_website':
       message = `Hi ${firstNameOrBiz}! 👋 I came across your business${
         igHandle ? ` on Instagram (@${igHandle})` : ''
-      } in ${city} and really loved your collection/work! 🌟\n\n` +
-      `I noticed you don't have a direct website or ordering link set up yet for customers. Many businesses in ${city} lose 30-40% of interested buyers because there's no quick way to view products and order 24/7.\n\n` +
-      `We build clean, mobile-first websites connected directly to WhatsApp checkout in just 3 days. Would you be open to a quick 2-minute video preview of what a store for ${lead.name} would look like?`;
+      } in ${city} and really loved your collection and work! 🌟\n\n` +
+      `I am a new freelancer helping local businesses establish clean, mobile-friendly online stores with direct WhatsApp ordering. I noticed you don't have a direct website link for customers yet.\n\n` +
+      `I've prepared a modern store concept designed specifically for ${lead.name}. Can I send you the preview?`;
       break;
 
     case 'social_growth':
-      message = `Hi team ${firstNameOrBiz}! 👋 Found your website while looking for top ${lead.category} services in ${city}.\n\n` +
-      `Your website looks great, but I noticed your Instagram presence is relatively quiet right now. We help ${lead.category} businesses generate 5-10 qualified inbound inquiries every week through targeted local reels and community outreach.\n\n` +
-      `Are you currently taking on new clients this month?`;
+      message = `Hi ${firstNameOrBiz}! 👋 Found your business while looking for top ${lead.category} brands in ${city}.\n\n` +
+      `I am a new freelancer helping local brands grow their Instagram & social presence to attract consistent customer inquiries through engaging content.\n\n` +
+      `I put together a tailored growth plan and content concept for ${lead.name}. Can I send you the preview?`;
       break;
 
     case 'ecommerce_expansion':
       message = `Hello ${firstNameOrBiz}! 👋 Hope you're having a productive week.\n\n` +
       `I've been following your updates on Instagram${igHandle ? ` (@${igHandle})` : ''} and love the strong engagement you have in ${city}!\n\n` +
-      `Since you already have a solid audience and website, we can help you plug in automated WhatsApp catalog orders & customer retargeting to boost repeat purchases by 25%.\n\n` +
-      `Would you like me to share a 1-page breakdown of how other ${lead.category} brands are running this?`;
+      `I am a new freelancer helping businesses integrate WhatsApp catalog ordering and automated customer follow-ups to boost repeat sales.\n\n` +
+      `I've built a quick mockup showing how this could work for ${lead.name}. Can I send you the preview?`;
       break;
 
     default:
       message = `Hi ${firstNameOrBiz}! 👋 I came across ${lead.name} in ${city} and was really impressed by what you're doing.\n\n` +
-      `We specialize in helping local businesses in ${city} streamline client inquiries and scale their sales.\n\n` +
-      `Would you have 5 minutes this week for a brief chat to see if we can bring you more high-intent customers?`;
+      `I am a new freelancer helping local businesses in ${city} modernize their online presence and increase sales through direct WhatsApp orders.\n\n` +
+      `I've prepared a custom design mockup for your business. Can I send you the preview?`;
       break;
   }
 

@@ -34,6 +34,9 @@ describe('pitchService', () => {
     expect(pitch.message).toContain('Srinagar');
     expect(pitch.message).toContain('@srinagarsilks');
     expect(pitch.message).toContain('website');
+    expect(pitch.message).toContain('I am a new freelancer');
+    expect(pitch.message).toContain('Can I send you the preview?');
+    expect(pitch.message.toLowerCase()).not.toContain('video');
     expect(pitch.recipientPhone).toBe('+91 9876543210');
   });
 
@@ -48,7 +51,41 @@ describe('pitchService', () => {
     };
 
     const pitch = generateWhatsAppPitch(lead);
-    expect(pitch.message).toContain('Instagram presence');
-    expect(pitch.message).toContain('inbound inquiries');
+    expect(pitch.message).toContain('Instagram');
+    expect(pitch.message).toContain('I am a new freelancer');
+    expect(pitch.message).toContain('Can I send you the preview?');
+    expect(pitch.message.toLowerCase()).not.toContain('video');
+  });
+
+  it('tailors messaging when opportunity is ecommerce_expansion', () => {
+    const lead: Lead = {
+      ...baseLead,
+      opportunity: {
+        hasHighPotential: true,
+        opportunityType: 'ecommerce_expansion',
+        summary: 'Website exists, needs WhatsApp store upgrade',
+      },
+    };
+
+    const pitch = generateWhatsAppPitch(lead);
+    expect(pitch.message).toContain('I am a new freelancer');
+    expect(pitch.message).toContain('Can I send you the preview?');
+    expect(pitch.message.toLowerCase()).not.toContain('video');
+  });
+
+  it('tailors messaging for default opportunity', () => {
+    const lead: Lead = {
+      ...baseLead,
+      opportunity: {
+        hasHighPotential: false,
+        opportunityType: 'general' as any,
+        summary: 'General outreach',
+      },
+    };
+
+    const pitch = generateWhatsAppPitch(lead);
+    expect(pitch.message).toContain('I am a new freelancer');
+    expect(pitch.message).toContain('Can I send you the preview?');
+    expect(pitch.message.toLowerCase()).not.toContain('video');
   });
 });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Lead, LeadStatus } from '../types/lead';
 import { leadService } from '../services/leadService';
+import { filterLeadsBySearch } from '../utils/leadSearchFilter';
 
 export interface UseLeadsReturn {
   leads: Lead[];
@@ -13,12 +14,17 @@ export interface UseLeadsReturn {
   setSearchFilter: (filter: string) => void;
   refreshLeads: () => Promise<void>;
   updateLeadStatus: (id: string, status: LeadStatus) => Promise<void>;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
+  deleteSelectedLeads: (ids: string[]) => Promise<void>;
+  deleteAllLeads: () => Promise<void>;
   stats: {
     total: number;
+    newLeads: number;
     qualified: number;
     needsWebsite: number;
     contacted: number;
+    lost: number;
   };
 }
 
@@ -60,6 +66,20 @@ export function useLeads(userId: string = 'demo_workspace_user'): UseLeadsReturn
     []
   );
 
+  const updateLead = useCallback(
+    async (id: string, updates: Partial<Lead>) => {
+      try {
+        await leadService.updateLead(id, updates);
+        setLeads((prev) =>
+          prev.map((l) => (l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l))
+        );
+      } catch (err: any) {
+        setError(err?.message || 'Failed to update lead');
+      }
+    },
+    []
+  );
+
   const deleteLead = useCallback(async (id: string) => {
     try {
       await leadService.deleteLead(id);
@@ -69,31 +89,40 @@ export function useLeads(userId: string = 'demo_workspace_user'): UseLeadsReturn
     }
   }, []);
 
+  const deleteSelectedLeads = useCallback(async (ids: string[]) => {
+    if (!ids || ids.length === 0) return;
+    try {
+      await leadService.batchDeleteLeads(ids);
+      const idSet = new Set(ids);
+      setLeads((prev) => prev.filter((l) => !idSet.has(l.id)));
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete selected leads');
+    }
+  }, []);
+
+  const deleteAllLeads = useCallback(async () => {
+    try {
+      await leadService.deleteAllLeads(userId);
+      setLeads([]);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete all leads');
+    }
+  }, [userId]);
+
   const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      // Status filter
-      if (selectedStatus !== 'all' && lead.status !== selectedStatus) {
-        return false;
-      }
-      // Text search filter
-      if (searchFilter.trim()) {
-        const query = searchFilter.toLowerCase();
-        const matchesName = lead.name.toLowerCase().includes(query);
-        const matchesCity = lead.location.city.toLowerCase().includes(query);
-        const matchesCategory = lead.category.toLowerCase().includes(query);
-        const matchesInstagram = lead.social.instagram?.handle?.toLowerCase().includes(query);
-        return matchesName || matchesCity || matchesCategory || matchesInstagram;
-      }
-      return true;
-    });
+    const statusFiltered =
+      selectedStatus === 'all' ? leads : leads.filter((l) => l.status === selectedStatus);
+    return filterLeadsBySearch(statusFiltered, searchFilter);
   }, [leads, selectedStatus, searchFilter]);
 
   const stats = useMemo(() => {
     return {
       total: leads.length,
+      newLeads: leads.filter((l) => l.status === 'new' || l.status === 'discovered').length,
       qualified: leads.filter((l) => l.status === 'qualified').length,
       needsWebsite: leads.filter((l) => !l.website.hasWebsite).length,
       contacted: leads.filter((l) => l.status === 'contacted').length,
+      lost: leads.filter((l) => l.status === 'lost' || l.status === 'unqualified').length,
     };
   }, [leads]);
 
@@ -108,7 +137,10 @@ export function useLeads(userId: string = 'demo_workspace_user'): UseLeadsReturn
     setSearchFilter,
     refreshLeads,
     updateLeadStatus,
+    updateLead,
     deleteLead,
+    deleteSelectedLeads,
+    deleteAllLeads,
     stats,
   };
 }
