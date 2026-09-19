@@ -2,6 +2,15 @@ import express from 'express';
 import { generateContentWithFallback } from '../lib/gemini';
 import { extractInstagramHandle, normalizeBusinessName } from '../utils/formatters';
 import { generateDiverseLeadCandidates, normalizeJKCity } from '../services/leadGeneratorPool';
+import {
+  getSupabaseClient,
+  LEADS_TABLE,
+  leadToSupabaseRow,
+  supabaseRowToLead,
+  SUPABASE_SCHEMA_SQL,
+  isSupabaseConfigured,
+  getSupabaseCredentials,
+} from '../lib/supabase';
 import { Type } from '@google/genai';
 
 const router = express.Router();
@@ -221,6 +230,220 @@ Provide realistic business details for ${jkTargetLocation} including business na
     return res.json(freshDiverseLeads);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+// ==========================================
+// SUPABASE DATABASE CONTROLLER ENDPOINTS
+// ==========================================
+
+/**
+ * Status and diagnostic check for Supabase database controller
+ */
+router.get('/db/status', async (req, res) => {
+  const configured = isSupabaseConfigured();
+  const { url } = getSupabaseCredentials();
+
+  let connectionStatus: 'connected' | 'not_configured' | 'error' = configured ? 'connected' : 'not_configured';
+  let leadCount = 0;
+  let message = configured ? 'Supabase credentials loaded' : 'SUPABASE_URL and SUPABASE_ANON_KEY pending in environment';
+
+  if (configured) {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { count, error } = await supabase
+          .from(LEADS_TABLE)
+          .select('*', { count: 'exact', head: true });
+
+        if (!error) {
+          leadCount = count ?? 0;
+          connectionStatus = 'connected';
+          message = 'Connected to Supabase PostgreSQL database';
+        } else {
+          connectionStatus = 'error';
+          message = error.message;
+        }
+      } catch (err: any) {
+        connectionStatus = 'error';
+        message = err.message || 'Error querying Supabase';
+      }
+    }
+  }
+
+  return res.json({
+    controller: 'supabase',
+    configured,
+    url: url ? url.replace(/^(https?:\/\/[^/]+).*/, '$1') : null,
+    table: LEADS_TABLE,
+    status: connectionStatus,
+    leadCount,
+    message,
+  });
+});
+
+/**
+ * Returns PostgreSQL DDL for Supabase setup
+ */
+router.get('/db/schema-sql', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(SUPABASE_SCHEMA_SQL.trim());
+});
+
+/**
+ * Query leads from Supabase controller
+ */
+router.get('/db/records', async (req, res) => {
+  const userId = req.query.userId as string | undefined;
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return res.json({
+      success: false,
+      source: 'local_fallback',
+      message: 'Supabase client not initialized (check environment credentials)',
+      leads: [],
+    });
+  }
+
+  try {
+    let query = supabase
+      .from(LEADS_TABLE)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    const leads = (data || []).map(supabaseRowToLead);
+    return res.json({ success: true, source: 'supabase', leads });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Insert or upsert lead into Supabase controller
+ */
+router.post('/db/records', async (req, res) => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return res.status(503).json({ error: 'Supabase is not configured' });
+  }
+
+  try {
+    const lead = req.body;
+    const row = leadToSupabaseRow(lead);
+    const { data, error } = await supabase
+      .from(LEADS_TABLE)
+      .upsert(row, { onConflict: 'id' })
+      .select();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.json({ success: true, lead: data?.[0] ? supabaseRowToLead(data[0]) : lead });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Update lead in Supabase controller
+ */
+router.patch('/db/records/:id', async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return res.status(503).json({ error: 'Supabase is not configured' });
+  }
+
+  try {
+    const rowUpdates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.status !== undefined) rowUpdates.status = updates.status;
+    if (updates.notes !== undefined) rowUpdates.notes = updates.notes;
+    if (updates.followUpDate !== undefined) rowUpdates.follow_up_date = updates.followUpDate;
+    if (updates.pitches !== undefined) rowUpdates.pitches = updates.pitches;
+    if (updates.qualificationScore !== undefined) rowUpdates.qualification_score = updates.qualificationScore;
+    if (updates.social?.instagram?.handle) rowUpdates.instagram_handle = updates.social.instagram.handle;
+
+    const { data, error } = await supabase
+      .from(LEADS_TABLE)
+      .update(rowUpdates)
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.json({ success: true, record: data?.[0] });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Delete lead in Supabase controller
+ */
+router.delete('/db/records/:id', async (req, res) => {
+  const { id } = req.params;
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return res.status(503).json({ error: 'Supabase is not configured' });
+  }
+
+  try {
+    const { error } = await supabase.from(LEADS_TABLE).delete().eq('id', id);
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Clear all leads in Supabase controller
+ */
+router.delete('/db/records', async (req, res) => {
+  const userId = req.query.userId as string | undefined;
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return res.status(503).json({ error: 'Supabase is not configured' });
+  }
+
+  try {
+    let query = supabase.from(LEADS_TABLE).delete();
+    if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      query = query.neq('id', '__dummy__');
+    }
+
+    const { error } = await query;
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.json({ success: true, cleared: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
   }
 });
 

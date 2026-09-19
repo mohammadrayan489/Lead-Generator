@@ -1,19 +1,13 @@
 import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  writeBatch,
-} from 'firebase/firestore';
-import { db } from '../lib/firebase';
+  getSupabaseClient,
+  LEADS_TABLE,
+  leadToSupabaseRow,
+  supabaseRowToLead,
+  isSupabaseConfigured,
+  getSupabaseCredentials,
+} from '../lib/supabase';
 import { Lead } from '../types/lead';
 
-const LEADS_COLLECTION = 'leads';
 const LOCAL_STORAGE_KEY = 'lead_generator_leads_cache';
 
 // In-memory cache fallback for SSR and test run environments
@@ -42,36 +36,57 @@ function saveLocalLeads(leads: Lead[]): void {
 
 export const leadService = {
   /**
-   * Retrieves all leads for a specific user, with automatic local cache sync.
+   * Returns metadata about the current Supabase database controller.
+   */
+  getDatabaseInfo() {
+    const { url } = getSupabaseCredentials();
+    return {
+      provider: 'supabase' as const,
+      isConfigured: isSupabaseConfigured(),
+      endpoint: url || 'pending configuration',
+    };
+  },
+
+  /**
+   * Retrieves all leads for a specific user from Supabase, syncing with local cache.
    */
   async getAllLeads(userId: string): Promise<Lead[]> {
-    try {
-      const q = query(
-        collection(db, LEADS_COLLECTION),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-      const snapshot = await getDocs(q);
-      const remoteLeads = snapshot.docs.map(
-        (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() } as Lead)
-      );
+    const supabase = getSupabaseClient();
 
-      // Cache locally for offline access
-      if (remoteLeads.length > 0) {
-        saveLocalLeads(remoteLeads);
-        return remoteLeads;
+    if (supabase) {
+      try {
+        let query = supabase
+          .from(LEADS_TABLE)
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data && Array.isArray(data)) {
+          const remoteLeads: Lead[] = data.map(supabaseRowToLead);
+          if (remoteLeads.length > 0) {
+            saveLocalLeads(remoteLeads);
+            return remoteLeads;
+          }
+        } else if (error) {
+          console.warn('Supabase fetch notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed, falling back to local workspace cache:', err);
       }
-    } catch (error) {
-      console.warn('Firestore fetch failed, falling back to local workspace cache:', error);
     }
 
-    // Fallback to local storage
-    const local = getLocalLeads().filter((l) => l.userId === userId || !l.userId);
+    // Local workspace cache fallback
+    const local = getLocalLeads().filter((l) => !userId || l.userId === userId || !l.userId);
     return local;
   },
 
   /**
-   * Adds a single structured lead to the database.
+   * Adds a single structured lead to Supabase and local cache.
    */
   async addLead(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead> {
     const now = new Date().toISOString();
@@ -82,15 +97,17 @@ export const leadService = {
       updatedAt: now,
     };
 
-    try {
-      const docRef = await addDoc(collection(db, LEADS_COLLECTION), {
-        ...lead,
-        createdAt: now,
-        updatedAt: now,
-      });
-      newLead.id = docRef.id;
-    } catch (error) {
-      console.warn('Firestore addDoc fallback to local storage:', error);
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const row = leadToSupabaseRow(newLead);
+        const { error } = await supabase.from(LEADS_TABLE).insert(row);
+        if (error) {
+          console.warn('Supabase insert notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase insert fallback to local storage:', err);
+      }
     }
 
     // Save to local cache
@@ -101,41 +118,56 @@ export const leadService = {
   },
 
   /**
-   * Batch stores leads into database and local cache.
+   * Batch stores leads into Supabase database controller and local cache.
    */
   async batchSaveLeads(leads: Lead[]): Promise<Lead[]> {
-    const saved: Lead[] = [];
-    for (const lead of leads) {
+    const supabase = getSupabaseClient();
+
+    if (supabase && leads.length > 0) {
       try {
-        const { id, ...data } = lead;
-        const docRef = await addDoc(collection(db, LEADS_COLLECTION), data);
-        saved.push({ ...lead, id: docRef.id });
-      } catch {
-        saved.push(lead);
+        const rows = leads.map(leadToSupabaseRow);
+        const { error } = await supabase
+          .from(LEADS_TABLE)
+          .upsert(rows, { onConflict: 'id' });
+
+        if (error) {
+          console.warn('Supabase batch upsert notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase batch save fallback:', err);
       }
     }
 
     const current = getLocalLeads();
     const existingIds = new Set(current.map((l) => l.id));
-    const merged = [...saved.filter((l) => !existingIds.has(l.id)), ...current];
+    const merged = [...leads.filter((l) => !existingIds.has(l.id)), ...current];
     saveLocalLeads(merged);
 
-    return saved;
+    return leads;
   },
 
   /**
-   * Updates an existing lead.
+   * Updates an existing lead in Supabase and local cache.
    */
   async updateLead(id: string, updates: Partial<Lead>): Promise<void> {
     const now = new Date().toISOString();
-    try {
-      const docRef = doc(db, LEADS_COLLECTION, id);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: now,
-      });
-    } catch (error) {
-      console.warn('Firestore updateDoc fallback:', error);
+    const supabase = getSupabaseClient();
+
+    if (supabase) {
+      try {
+        const current = getLocalLeads().find((l) => l.id === id);
+        const fullLead: Lead = current
+          ? { ...current, ...updates, updatedAt: now }
+          : ({ id, ...updates, updatedAt: now } as Lead);
+
+        const row = leadToSupabaseRow(fullLead);
+        const { error } = await supabase.from(LEADS_TABLE).update(row).eq('id', id);
+        if (error) {
+          console.warn('Supabase update notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase updateLead fallback:', err);
+      }
     }
 
     // Update local cache
@@ -145,14 +177,20 @@ export const leadService = {
   },
 
   /**
-   * Deletes a lead.
+   * Deletes a lead from Supabase and local cache.
    */
   async deleteLead(id: string): Promise<void> {
-    try {
-      const docRef = doc(db, LEADS_COLLECTION, id);
-      await deleteDoc(docRef);
-    } catch (error) {
-      console.warn('Firestore deleteDoc fallback:', error);
+    const supabase = getSupabaseClient();
+
+    if (supabase) {
+      try {
+        const { error } = await supabase.from(LEADS_TABLE).delete().eq('id', id);
+        if (error) {
+          console.warn('Supabase delete notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase deleteLead fallback:', err);
+      }
     }
 
     // Update local cache
@@ -161,19 +199,21 @@ export const leadService = {
   },
 
   /**
-   * Deletes a batch of leads by IDs from Firestore and local cache.
+   * Deletes a batch of leads by IDs from Supabase and local cache.
    */
   async batchDeleteLeads(ids: string[]): Promise<void> {
     if (!ids || ids.length === 0) return;
-    try {
-      const batch = writeBatch(db);
-      for (const id of ids) {
-        const docRef = doc(db, LEADS_COLLECTION, id);
-        batch.delete(docRef);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase.from(LEADS_TABLE).delete().in('id', ids);
+        if (error) {
+          console.warn('Supabase batch delete notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase batchDeleteLeads fallback:', err);
       }
-      await batch.commit();
-    } catch (error) {
-      console.warn('Firestore batchDeleteLeads fallback:', error);
     }
 
     // Update local cache
@@ -183,25 +223,27 @@ export const leadService = {
   },
 
   /**
-   * Deletes all leads (optionally scoped to userId) from Firestore and local cache.
+   * Deletes all leads (optionally scoped to userId) from Supabase and local cache.
    */
   async deleteAllLeads(userId?: string): Promise<void> {
-    try {
-      const leadsRef = collection(db, LEADS_COLLECTION);
-      const q = userId
-        ? query(leadsRef, where('userId', '==', userId))
-        : query(leadsRef);
-      const snapshot = await getDocs(q);
+    const supabase = getSupabaseClient();
 
-      if (!snapshot.empty) {
-        const batch = writeBatch(db);
-        snapshot.docs.forEach((d) => {
-          batch.delete(d.ref);
-        });
-        await batch.commit();
+    if (supabase) {
+      try {
+        let query = supabase.from(LEADS_TABLE).delete();
+        if (userId) {
+          query = query.eq('user_id', userId);
+        } else {
+          // Supabase requires a filter for deletes; neq id to impossible dummy
+          query = query.neq('id', '__dummy_all__');
+        }
+        const { error } = await query;
+        if (error) {
+          console.warn('Supabase deleteAllLeads notice:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase deleteAllLeads fallback:', err);
       }
-    } catch (error) {
-      console.warn('Firestore deleteAllLeads fallback:', error);
     }
 
     // Update local cache
