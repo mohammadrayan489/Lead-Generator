@@ -17,7 +17,8 @@ export interface UseLeadsReturn {
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
   deleteSelectedLeads: (ids: string[]) => Promise<void>;
-  deleteAllLeads: () => Promise<void>;
+  deleteAllLeads: (purgeAll?: boolean) => Promise<void>;
+  addStreamedLead: (lead: Lead) => void;
   stats: {
     total: number;
     newLeads: number;
@@ -100,14 +101,27 @@ export function useLeads(userId: string = 'demo_workspace_user'): UseLeadsReturn
     }
   }, []);
 
-  const deleteAllLeads = useCallback(async () => {
-    try {
-      await leadService.deleteAllLeads(userId);
-      setLeads([]);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to delete all leads');
-    }
-  }, [userId]);
+  const deleteAllLeads = useCallback(
+    async (purgeAll: boolean = false) => {
+      try {
+        await leadService.deleteAllLeads(userId, purgeAll);
+        setLeads([]);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to delete all leads');
+      }
+    },
+    [userId]
+  );
+
+  const addStreamedLead = useCallback((lead: Lead) => {
+    setLeads((prev) => {
+      const exists = prev.some((l) => l.id === lead.id);
+      if (exists) {
+        return prev.map((l) => (l.id === lead.id ? lead : l));
+      }
+      return [lead, ...prev];
+    });
+  }, []);
 
   const filteredLeads = useMemo(() => {
     const statusFiltered =
@@ -141,6 +155,7 @@ export function useLeads(userId: string = 'demo_workspace_user'): UseLeadsReturn
     deleteLead,
     deleteSelectedLeads,
     deleteAllLeads,
+    addStreamedLead,
     stats,
   };
 }

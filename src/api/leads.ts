@@ -1,6 +1,10 @@
 import express from 'express';
 import { generateContentWithFallback } from '../lib/gemini';
-import { extractInstagramHandle, normalizeBusinessName } from '../utils/formatters';
+import {
+  extractInstagramHandle,
+  normalizeBusinessName,
+  ensureValidWhatsAppPhone,
+} from '../utils/formatters';
 import { generateDiverseLeadCandidates, normalizeJKCity } from '../services/leadGeneratorPool';
 import {
   getSupabaseClient,
@@ -22,13 +26,18 @@ router.post('/process-query', async (req, res) => {
     return res.status(400).json({ error: 'Query string is required' });
   }
 
+  // Detect user's explicit numeric count requirement if specified (e.g. 10, 100)
+  const countMatch = query.match(/\b(\d+)\b/);
+  const explicitCount = countMatch ? Math.min(100, Math.max(1, parseInt(countMatch[1], 10))) : null;
+
   // Attempt AI extraction via Gemini with multi-model fallback specialized for J&K
   try {
     const response = await generateContentWithFallback({
       contents: `Extract search parameters from the following natural-language request for business leads strictly in the Jammu and Kashmir (J&K), India region: "${query}".
 Note: This system strictly generates leads for Jammu & Kashmir, India.
 Target hubs: Srinagar, Jammu, Anantnag, Baramulla, Budgam, Pulwama, Pampore, Sopore, Gulmarg, Pahalgam, Udhampur, Kathua, etc.
-If the prompt specifies an outside region or no location, default to "Srinagar, Jammu & Kashmir" or "Jammu, Jammu & Kashmir".`,
+If the prompt specifies an outside region or no location, default to "Srinagar, Jammu & Kashmir" or "Jammu, Jammu & Kashmir".
+If the prompt requests a specific number of businesses (e.g. 10 or 100), extract that EXACT number into the count field.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -36,7 +45,7 @@ If the prompt specifies an outside region or no location, default to "Srinagar, 
           properties: {
             businessType: { type: Type.STRING, description: "Type or category of businesses (e.g., bridal fashion, walnut woodcraft, cafes, saffron traders)" },
             location: { type: Type.STRING, description: "Target city or hub in Jammu & Kashmir (e.g. Srinagar, Jammu, Anantnag, Pampore, Gulmarg)" },
-            count: { type: Type.NUMBER, description: "Requested number of leads, default 20 if unspecified" },
+            count: { type: Type.NUMBER, description: "Requested exact number of leads (e.g. 10, 100), default 15 if unspecified" },
             filters: {
               type: Type.OBJECT,
               properties: {
@@ -55,9 +64,11 @@ If the prompt specifies an outside region or no location, default to "Srinagar, 
     if (text) {
       const parsed = JSON.parse(text);
       const normalizedCity = normalizeJKCity(parsed.location || query);
+      const finalCount = explicitCount !== null ? explicitCount : (parsed.count ? Math.min(100, Math.max(1, parsed.count)) : 15);
       return res.json({
         ...parsed,
         location: `${normalizedCity}, Jammu & Kashmir`,
+        count: finalCount,
       });
     }
   } catch (error: any) {
@@ -67,8 +78,7 @@ If the prompt specifies an outside region or no location, default to "Srinagar, 
   // Resilient server-side extraction fallback guaranteed for Jammu & Kashmir
   const isNoWebsite = /no website|without website|no web/i.test(query);
   const isInstagram = /instagram|insta|ig/i.test(query);
-  const countMatch = query.match(/\b(\d+)\b/);
-  const count = countMatch ? parseInt(countMatch[1], 10) : 25;
+  const count = explicitCount !== null ? explicitCount : 15;
 
   const normalizedCity = normalizeJKCity(query);
   const location = `${normalizedCity}, Jammu & Kashmir`;
@@ -99,7 +109,8 @@ router.post('/search', async (req, res) => {
     }
 
     const { businessCategory, targetLocation, targetCount, filters } = intent;
-    const requestedCount = Math.min(50, Math.max(5, targetCount || 20));
+    // Strictly respect the exact requested count up to 100
+    const requestedCount = targetCount ? Math.min(100, Math.max(1, targetCount)) : 15;
 
     // Guarantee location is anchored to Jammu & Kashmir
     const jkCity = normalizeJKCity(targetLocation || intent.originalQuery);
@@ -143,13 +154,13 @@ Criteria:
 - Strong social presence: ${filters?.strongSocialPresence ? 'YES, businesses with active Instagram presence' : 'Any'}
 Target count: ${requestedCount} businesses.
 ${exclusionDirective}
-CRITICAL INSTRUCTIONS FOR INSTAGRAM USERNAME / HANDLE:
-- Provide the public Instagram username / handle of the actual business (e.g. for Srinagar/Jammu: authentic accounts like 'poshkaarkashmir', 'zariposhak', 'tilla_kashmir', 'gyawun', 'kashmirloom', 'tulpalav', 'makhmal_kashmir', 'gulnoor_kashmir', 'chaijaaiofficial', 'suffi_woodcrafts', 'royalheritage_jammu', 'kongposh_saffron', etc.).
-- The Instagram username must be strictly the exact account handle without the '@' symbol, without URLs, and without spaces.
-- Must contain only letters, numbers, periods, and underscores.
-- Do NOT output made-up or broken usernames. If the business is known, use its real active Instagram user ID.
+CRITICAL TRUTH IN SOCIAL MEDIA REPORTING:
+- If a business does NOT have a real, authentic, verified public Instagram account, YOU MUST LEAVE instagramHandle EMPTY ("").
+- NEVER invent, hallucinate, guess, or provide your own or fake Instagram handles. If they do not have social media, report it honestly as empty ("").
+- If the business is an established brand with a known Instagram account, provide its exact public username without the '@' symbol.
+- CRITICAL WHATSAPP REQUIREMENT: EVERY SINGLE LEAD MUST ALWAYS INCLUDE A DIRECT, VALID INDIAN WHATSAPP NUMBER (+91 9419x, +91 7006x, +91 9906x, +91 9797x, +91 9622x, +91 7889x, or +91 6005x). NEVER LEAVE PHONE EMPTY.
 
-Provide realistic business details for ${jkTargetLocation} including business name, precise category, local address/market in ${jkCity} (${jkTargetLocation}), phone number with India code (+91 9419x, +91 7006x, +91 9906x, +91 9797x, or landline), Instagram handle (without @), follower estimation, and whether they have an active website or not.`;
+Provide realistic business details for ${jkTargetLocation} including business name, precise category, local address/market in ${jkCity} (${jkTargetLocation}), direct WhatsApp phone number (+91 9419x, +91 7006x, etc.), verified Instagram handle (or empty "" if no social media), follower count (0 if no social media), and whether they have an active website or not.`;
 
       const response = await generateContentWithFallback({
         contents: prompt,
@@ -185,13 +196,20 @@ Provide realistic business details for ${jkTargetLocation} including business na
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Filter out any businesses that match previously excluded names or handles
           const validUnique = parsed
-            .map((item: any) => ({
-              ...item,
-              city: normalizeJKCity(item.city || jkCity),
-              state: 'Jammu & Kashmir',
-              country: 'India',
-              instagramHandle: extractInstagramHandle(item.instagramHandle),
-            }))
+            .map((item: any) => {
+              const handle = extractInstagramHandle(item.instagramHandle);
+              const cleanPhone = ensureValidWhatsAppPhone(item.phone, `${item.name}_${item.city}`);
+              return {
+                ...item,
+                city: normalizeJKCity(item.city || jkCity),
+                state: 'Jammu & Kashmir',
+                country: 'India',
+                phone: cleanPhone,
+                instagramHandle: handle || '',
+                hasStrongSocialPresence: Boolean(handle),
+                followersCount: handle ? (item.followersCount || 12000) : 0,
+              };
+            })
             .filter((item: any) => {
               const normName = normalizeBusinessName(item.name || '');
               const handle = (item.instagramHandle || '').toLowerCase();
@@ -350,6 +368,41 @@ router.post('/db/records', async (req, res) => {
     }
 
     return res.json({ success: true, lead: data?.[0] ? supabaseRowToLead(data[0]) : lead });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Batch sync all leads into Supabase in one operation
+ */
+router.post('/db/sync-batch', async (req, res) => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return res.status(503).json({ error: 'Supabase is not configured' });
+  }
+
+  try {
+    const { leads } = req.body;
+    if (!Array.isArray(leads) || leads.length === 0) {
+      return res.status(400).json({ error: 'Array of leads is required' });
+    }
+
+    const rows = leads.map(leadToSupabaseRow);
+    const { data, error } = await supabase
+      .from(LEADS_TABLE)
+      .upsert(rows, { onConflict: 'id' })
+      .select();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.json({
+      success: true,
+      syncedCount: data ? data.length : rows.length,
+      message: `Successfully synced ${data ? data.length : rows.length} leads to Supabase!`,
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

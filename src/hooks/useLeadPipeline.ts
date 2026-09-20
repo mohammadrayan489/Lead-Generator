@@ -10,7 +10,10 @@ export interface UseLeadPipelineReturn {
   resetPipeline: () => void;
 }
 
-export function useLeadPipeline(onSuccess?: (newLeads: Lead[]) => void): UseLeadPipelineReturn {
+export function useLeadPipeline(
+  onSuccess?: (newLeads: Lead[]) => void,
+  onLeadDiscovered?: (lead: Lead, current: number, total: number) => void
+): UseLeadPipelineReturn {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<PipelineProgressState | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -27,13 +30,20 @@ export function useLeadPipeline(onSuccess?: (newLeads: Lead[]) => void): UseLead
       setLogs([]);
 
       try {
-        const results = await leadPipeline.runPipeline(query, userId, (state) => {
-          setProgress(state);
-          setLogs((prev) => {
-            if (prev[prev.length - 1] === state.message) return prev;
-            return [...prev, state.message];
-          });
-        });
+        const results = await leadPipeline.runPipeline(
+          query,
+          userId,
+          (state) => {
+            setProgress(state);
+            setLogs((prev) => {
+              if (prev[prev.length - 1] === state.message) return prev;
+              return [...prev, state.message];
+            });
+          },
+          (discoveredLead, current, total) => {
+            onLeadDiscovered?.(discoveredLead, current, total);
+          }
+        );
 
         if (onSuccess) {
           onSuccess(results);
@@ -60,7 +70,7 @@ export function useLeadPipeline(onSuccess?: (newLeads: Lead[]) => void): UseLead
         setIsProcessing(false);
       }
     },
-    [onSuccess]
+    [onSuccess, onLeadDiscovered]
   );
 
   return {

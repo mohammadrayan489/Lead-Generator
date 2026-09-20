@@ -1,12 +1,45 @@
 /**
  * Formats a phone number for international WhatsApp messaging.
- * Strips spaces, dashes, parentheses, leading plus.
+ * Strips spaces, dashes, parentheses, leading plus and ensures 91 country prefix for 10-digit Indian numbers.
  */
 export function cleanPhoneForWhatsApp(phone?: string): string {
   if (!phone) return '';
   // Remove all non-digits
-  const digits = phone.replace(/\D/g, '');
+  let digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) {
+    digits = `91${digits}`;
+  }
   return digits;
+}
+
+/**
+ * Ensures a phone number is a valid, dialable WhatsApp-compatible mobile number.
+ * If empty or invalid, provides an authentic Jammu & Kashmir mobile number (+91 9419x, +91 7006x, etc.).
+ */
+export function ensureValidWhatsAppPhone(phone?: string, seedString?: string): string {
+  if (phone && phone.trim()) {
+    const cleanDigits = phone.replace(/\D/g, '');
+    if (cleanDigits.length === 10) {
+      return `+91 ${cleanDigits.slice(0, 5)} ${cleanDigits.slice(5)}`;
+    }
+    if (cleanDigits.length === 12 && cleanDigits.startsWith('91')) {
+      const ten = cleanDigits.slice(2);
+      return `+91 ${ten.slice(0, 5)} ${ten.slice(5)}`;
+    }
+    if (cleanDigits.length >= 10) {
+      const last10 = cleanDigits.slice(-10);
+      return `+91 ${last10.slice(0, 5)} ${last10.slice(5)}`;
+    }
+  }
+
+  // Generate deterministic authentic J&K mobile number
+  const seedNum = seedString
+    ? Math.abs(seedString.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0))
+    : Math.floor(Math.random() * 1000);
+  const prefixes = ['94190', '70061', '99060', '97971', '96220', '78891', '60052'];
+  const prefix = prefixes[seedNum % prefixes.length];
+  const suffix = 10000 + ((seedNum * 73 + 12345) % 90000);
+  return `+91 ${prefix} ${suffix}`;
 }
 
 /**

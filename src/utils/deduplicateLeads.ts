@@ -82,18 +82,35 @@ export function mergeLeads(existing: Lead, incoming: Lead): Lead {
     },
     social: {
       hasStrongSocialPresence: existing.social.hasStrongSocialPresence || incoming.social.hasStrongSocialPresence,
-      instagram: {
+      instagram: (existing.social.instagram || incoming.social.instagram) ? {
         ...existing.social.instagram,
         ...incoming.social.instagram,
-      },
-      facebook: {
+      } : undefined,
+      facebook: (existing.social.facebook || incoming.social.facebook) ? {
         ...existing.social.facebook,
         ...incoming.social.facebook,
-      },
-      linkedin: {
+      } : undefined,
+      linkedin: (existing.social.linkedin || incoming.social.linkedin) ? {
+        hasPage: existing.social.linkedin?.hasPage ?? incoming.social.linkedin?.hasPage ?? false,
         ...existing.social.linkedin,
         ...incoming.social.linkedin,
-      },
+      } : undefined,
+      twitter: (existing.social.twitter || incoming.social.twitter) ? {
+        hasAccount: existing.social.twitter?.hasAccount ?? incoming.social.twitter?.hasAccount ?? false,
+        ...existing.social.twitter,
+        ...incoming.social.twitter,
+      } : undefined,
+      youtube: (existing.social.youtube || incoming.social.youtube) ? {
+        hasChannel: existing.social.youtube?.hasChannel ?? incoming.social.youtube?.hasChannel ?? false,
+        ...existing.social.youtube,
+        ...incoming.social.youtube,
+      } : undefined,
+      googleMaps: (existing.social.googleMaps || incoming.social.googleMaps) ? {
+        hasListing: existing.social.googleMaps?.hasListing ?? incoming.social.googleMaps?.hasListing ?? false,
+        verifiedOnMaps: existing.social.googleMaps?.verifiedOnMaps ?? incoming.social.googleMaps?.verifiedOnMaps ?? false,
+        ...existing.social.googleMaps,
+        ...incoming.social.googleMaps,
+      } : undefined,
     },
     qualificationScore: Math.max(existing.qualificationScore, incoming.qualificationScore),
     qualificationReasons: Array.from(new Set([...existing.qualificationReasons, ...incoming.qualificationReasons])),

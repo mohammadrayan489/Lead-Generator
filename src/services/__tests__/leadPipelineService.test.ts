@@ -41,9 +41,10 @@ describe('leadPipelineService', () => {
     providerRegistry.register(mockProvider);
     expect(providerRegistry.get('test_places_provider')).toBeDefined();
 
+    const testUser = `test_user_provider_${Date.now()}`;
     const results = await leadPipeline.runPipeline(
       'Find 10 craft stores in Srinagar',
-      'test_user'
+      testUser
     );
 
     expect(results.length).toBeGreaterThanOrEqual(1);

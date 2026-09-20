@@ -17,6 +17,14 @@ import {
   Check,
   X,
   Clock,
+  Linkedin,
+  Twitter,
+  Youtube,
+  ShieldAlert,
+  Phone,
+  Copy,
+  AlertCircle,
+  Star,
 } from 'lucide-react';
 import {
   buildWhatsAppLink,
@@ -24,6 +32,9 @@ import {
   buildInstagramProfileUrl,
   extractInstagramHandle,
 } from '../utils/formatters';
+import { calculateLeadQualification } from '../utils/qualificationScore';
+import { performStrictSocialAudit } from '../utils/strictSocialScorer';
+import { classifyLeadNiche, NICHE_DEFINITIONS } from '../utils/nicheClassifier';
 
 interface LeadCardProps {
   lead: Lead;
@@ -51,6 +62,42 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   const [noteText, setNoteText] = useState(lead.notes || '');
   const [followUpDate, setFollowUpDate] = useState(lead.followUpDate || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+
+  // Pitch tracking: Lead is marked pitched if explicitly starred, marked hasBeenPitched, or set to 'contacted'
+  const isPitched = Boolean(lead.isStarred || lead.hasBeenPitched || lead.status === 'contacted');
+
+  const handleWhatsAppPitch = () => {
+    // Automatically flag client as pitched & starred & contacted
+    onUpdateLead?.(lead.id, {
+      isStarred: true,
+      hasBeenPitched: true,
+      pitchedAt: new Date().toISOString(),
+      status: 'contacted',
+    });
+    onStatusChange(lead.id, 'contacted');
+  };
+
+  const handleToggleStar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextStarred = !isPitched;
+    onUpdateLead?.(lead.id, {
+      isStarred: nextStarred,
+      hasBeenPitched: nextStarred,
+      pitchedAt: nextStarred ? (lead.pitchedAt || new Date().toISOString()) : undefined,
+      status: nextStarred && lead.status !== 'contacted' ? 'contacted' : lead.status,
+    });
+    if (nextStarred && lead.status !== 'contacted') {
+      onStatusChange(lead.id, 'contacted');
+    }
+  };
+
+  const hasInstagram = Boolean(lead.social?.instagram?.handle);
+  const hasAnySocial =
+    hasInstagram ||
+    Boolean(lead.social?.linkedin?.hasPage) ||
+    Boolean(lead.social?.twitter?.hasAccount) ||
+    Boolean(lead.social?.youtube?.hasChannel);
 
   useEffect(() => {
     setNoteText(lead.notes || '');
@@ -98,7 +145,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
       }`}
     >
       <div>
-        {/* Top bar: Checkbox, Category, Status, Score, Delete */}
+        {/* Top bar: Checkbox, Category, Status, Score, Star, Delete */}
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             {onToggleSelect && (
@@ -113,7 +160,21 @@ export const LeadCard: React.FC<LeadCardProps> = ({
                 title="Select lead"
               />
             )}
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            {(() => {
+              const niche = classifyLeadNiche(lead);
+              const nicheDef = NICHE_DEFINITIONS[niche];
+              const NicheIcon = nicheDef.icon;
+              return (
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${nicheDef.badgeBg} ${nicheDef.badgeText} ${nicheDef.badgeBorder}`}
+                  title={`${nicheDef.label} - ${lead.category || 'Business'}`}
+                >
+                  <NicheIcon className="w-3 h-3" />
+                  <span>{nicheDef.shortLabel}</span>
+                </span>
+              );
+            })()}
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[120px]">
               {lead.category || 'Business'}
             </span>
             <StatusSelector
@@ -121,9 +182,46 @@ export const LeadCard: React.FC<LeadCardProps> = ({
               onStatusChange={(newStatus) => onStatusChange(lead.id, newStatus)}
               size="sm"
             />
+            {isPitched && (
+              <span
+                className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 shadow-2xs animate-in fade-in duration-150"
+                title={`Already pitched via WhatsApp${lead.pitchedAt ? ` (${new Date(lead.pitchedAt).toLocaleDateString()})` : ''}`}
+              >
+                <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                <span>Pitched</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Star Option Button: Automatically stars when pitched, or manually toggled */}
+            <button
+              type="button"
+              onClick={handleToggleStar}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 text-xs font-medium ${
+                isPitched
+                  ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-2xs'
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-amber-500 hover:border-amber-300'
+              }`}
+              title={
+                isPitched
+                  ? `Client pitched on WhatsApp${lead.pitchedAt ? ` (${new Date(lead.pitchedAt).toLocaleDateString()})` : ''} - Click to toggle star`
+                  : 'Star option: Mark client as pitched via WhatsApp'
+              }
+              aria-label={isPitched ? 'Unstar lead' : 'Star lead as pitched'}
+            >
+              <Star
+                className={`w-3.5 h-3.5 transition-colors ${
+                  isPitched
+                    ? 'fill-amber-400 text-amber-500'
+                    : 'text-slate-400 dark:text-slate-500'
+                }`}
+              />
+              <span className="text-[11px] hidden sm:inline font-semibold">
+                {isPitched ? 'Pitched ★' : 'Star'}
+              </span>
+            </button>
+
             <div
               className={`px-2 py-0.5 rounded-full border text-xs font-bold ${getScoreColor(
                 lead.qualificationScore
@@ -158,7 +256,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
           {lead.name}
         </h3>
 
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1 mb-2.5">
           <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
           <span className="truncate">
             {lead.location.address || lead.location.city}
@@ -166,8 +264,62 @@ export const LeadCard: React.FC<LeadCardProps> = ({
           </span>
         </div>
 
+        {/* Guaranteed WhatsApp Contact Strip */}
+        <div className="flex items-center justify-between bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-lg px-2.5 py-1.5 mb-2.5">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-900 dark:text-emerald-200 font-medium truncate">
+            <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="font-semibold text-[11px] text-emerald-800 dark:text-emerald-300 shrink-0">WhatsApp:</span>
+            <span className="font-mono font-bold text-emerald-950 dark:text-emerald-100 text-xs tracking-tight truncate">
+              {lead.phone}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (lead.phone) {
+                  navigator.clipboard.writeText(lead.phone);
+                  setCopiedPhone(true);
+                  setTimeout(() => setCopiedPhone(false), 2000);
+                }
+              }}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded text-[10px] font-medium transition-colors cursor-pointer"
+              title="Copy WhatsApp number"
+            >
+              {copiedPhone ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+              <span>{copiedPhone ? 'Copied' : 'Copy'}</span>
+            </button>
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleWhatsAppPitch();
+                }}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-2xs transition-colors"
+                title="Direct WhatsApp chat - automatically marks as Pitched ★"
+              >
+                <MessageCircle className="w-3 h-3" />
+                <span>Chat</span>
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Explicit No Social Media Notice when client has zero social presence */}
+        {!hasAnySocial && (
+          <div className="flex items-center gap-1.5 text-[11px] bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-md px-2.5 py-1 mb-2.5 text-slate-700 dark:text-slate-300 font-medium">
+            <AlertCircle className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="font-semibold text-slate-800 dark:text-slate-200">No Social Media:</span>
+            <span className="truncate text-slate-600 dark:text-slate-400">Zero social media presence. Operates via WhatsApp & storefront.</span>
+          </div>
+        )}
+
         {/* Sales Opportunity Summary */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg p-2.5 mb-4">
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg p-2.5 mb-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             <TrendingUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>Opportunity:</span>
@@ -177,24 +329,94 @@ export const LeadCard: React.FC<LeadCardProps> = ({
           </p>
         </div>
 
+        {/* Devil's Advocate Preview */}
+        {(() => {
+          const devilsAdvocate = lead.devilsAdvocate || calculateLeadQualification(lead).devilsAdvocate;
+          if (!devilsAdvocate) return null;
+          return (
+            <div
+              className="flex items-center gap-1.5 text-[11px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 rounded-md px-2 py-1 mb-2 text-amber-900 dark:text-amber-300"
+              title={`Anticipated Objection: ${devilsAdvocate.expectedObjection}`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="font-bold shrink-0">Objection:</span>
+              <span className="truncate text-amber-800 dark:text-amber-200">
+                {devilsAdvocate.expectedObjection}
+              </span>
+            </div>
+          );
+        })()}
+
+        {/* Strict Social Activity Score (Activity-based, not just presence) */}
+        {(() => {
+          const socialAudit = lead.strictSocialAudit || performStrictSocialAudit(lead);
+          return (
+            <div
+              className="flex items-center justify-between gap-1.5 text-[11px] bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60 rounded-md px-2 py-1 mb-3"
+              title={socialAudit.criticalSummary}
+            >
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="font-semibold text-slate-700 dark:text-slate-300 shrink-0">Activity Score:</span>
+                <span className="text-slate-600 dark:text-slate-400 truncate text-[10px]">
+                  {socialAudit.criticalSummary}
+                </span>
+              </div>
+              <span
+                className={`shrink-0 font-bold px-1.5 py-0.5 rounded text-[10px] border ${
+                  socialAudit.overallActivityScore >= 70
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                    : socialAudit.overallActivityScore >= 45
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800'
+                    : 'bg-slate-200/70 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                }`}
+                title="Strict Social Media Activity Rating (0-100)"
+              >
+                {socialAudit.overallActivityScore}/100 ({socialAudit.activityGrade})
+              </span>
+            </div>
+          );
+        })()}
+
         {/* Digital Footprint badges */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 mb-4 text-xs">
           {/* Website indicator */}
           {lead.website?.hasWebsite && lead.website.url ? (
             <a
               href={normalizeWebsiteUrl(lead.website.url)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md transition-colors text-[11px]"
             >
-              <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <span className="truncate max-w-[110px]">Website</span>
-              <ExternalLink className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+              <Globe className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+              <span className="truncate max-w-[90px]">Website</span>
+              <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
             </a>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-300 rounded-md font-medium">
-              <Globe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/80 text-rose-800 dark:text-rose-300 rounded-md font-medium text-[11px]">
+              <Globe className="w-3 h-3 text-rose-600 dark:text-rose-400" />
               No Website
+            </span>
+          )}
+
+          {/* Google Maps indicator */}
+          {lead.social?.googleMaps?.placeUrl ? (
+            <a
+              href={lead.social.googleMaps.placeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-300 rounded-md transition-colors text-[11px] font-medium"
+              title="View verified listing on Google Maps"
+            >
+              <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+              <span>{lead.social.googleMaps.rating ? `${lead.social.googleMaps.rating}★ Maps` : 'Maps'}</span>
+              <ExternalLink className="w-2.5 h-2.5 text-amber-500" />
+            </a>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50/70 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 rounded-md text-[11px]">
+              <MapPin className="w-3 h-3 text-amber-500" />
+              Maps Listing
             </span>
           )}
 
@@ -205,15 +427,79 @@ export const LeadCard: React.FC<LeadCardProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-pink-50 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/50 border border-pink-200 dark:border-pink-800/80 text-pink-700 dark:text-pink-300 rounded-md transition-colors font-medium"
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/50 border border-pink-200 dark:border-pink-800/80 text-pink-700 dark:text-pink-300 rounded-md transition-colors text-[11px] font-medium"
             >
-              <Instagram className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+              <Instagram className="w-3 h-3 text-pink-600 dark:text-pink-400" />
               <span>@{extractInstagramHandle(lead.social.instagram.handle)}</span>
             </a>
-          ) : lead.social?.hasStrongSocialPresence ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 rounded-md font-medium border border-pink-200/50 dark:border-pink-800/50">
-              <Instagram className="w-3.5 h-3.5 text-pink-500 dark:text-pink-400" />
-              Active Social
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-medium"
+              title="Verified: Client does not have an active Instagram account"
+            >
+              No Instagram
+            </span>
+          )}
+
+          {/* LinkedIn indicator (verified profiles only) */}
+          {lead.social?.linkedin?.hasPage && lead.social?.linkedin?.profileUrl && (
+            <a
+              href={lead.social.linkedin.profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/80 text-blue-700 dark:text-blue-300 rounded-md transition-colors text-[11px] font-medium"
+              title="Verified on LinkedIn Business Directory"
+            >
+              <Linkedin className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <span>LinkedIn</span>
+            </a>
+          )}
+
+          {/* X / Twitter indicator (verified profiles only) */}
+          {lead.social?.twitter?.hasAccount && lead.social?.twitter?.url && (
+            <a
+              href={lead.social.twitter.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800/80 text-sky-700 dark:text-sky-300 rounded-md transition-colors text-[11px] font-medium"
+              title="Audited on X (Twitter)"
+            >
+              <Twitter className="w-3 h-3 text-sky-500" />
+              <span>X</span>
+            </a>
+          )}
+
+          {/* YouTube indicator (verified channels only) */}
+          {lead.social?.youtube?.hasChannel && lead.social?.youtube?.channelUrl && (
+            <a
+              href={lead.social.youtube.channelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800/80 text-red-700 dark:text-red-300 rounded-md transition-colors text-[11px] font-medium"
+              title="Audited on YouTube"
+            >
+              <Youtube className="w-3 h-3 text-red-600" />
+              <span>YouTube</span>
+            </a>
+          )}
+
+          {/* Honest footprint tag: Explicitly report if no social media at all */}
+          {!hasAnySocial ? (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-semibold"
+              title="Audited across web: No profile on Instagram, LinkedIn, X, or YouTube"
+            >
+              No Social Media (WhatsApp Direct)
+            </span>
+          ) : !lead.social?.linkedin?.hasPage && !lead.social?.twitter?.hasAccount && !lead.social?.youtube?.hasChannel ? (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded text-[10px]"
+              title="Audited across web: No corporate profile on LinkedIn, X, or YouTube"
+            >
+              IG & WhatsApp Only
             </span>
           ) : null}
         </div>
@@ -403,8 +689,12 @@ export const LeadCard: React.FC<LeadCardProps> = ({
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleWhatsAppPitch();
+              }}
               className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-              title="Open WhatsApp with personalized pitch"
+              title="Open WhatsApp with personalized pitch - automatically marks as Pitched ★"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Pitch</span>

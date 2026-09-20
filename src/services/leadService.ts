@@ -76,7 +76,27 @@ export const leadService = {
           console.warn('Supabase fetch notice:', error.message);
         }
       } catch (err) {
-        console.warn('Supabase fetch failed, falling back to local workspace cache:', err);
+        console.warn('Supabase fetch failed, falling back to server API / local cache:', err);
+      }
+    }
+
+    // Try server-side Supabase API endpoint if in browser
+    if (typeof window !== 'undefined') {
+      try {
+        const endpoint = userId
+          ? `/api/leads/db/records?userId=${encodeURIComponent(userId)}`
+          : '/api/leads/db/records';
+        const res = await fetch(endpoint);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.records && Array.isArray(json.records) && json.records.length > 0) {
+            const serverLeads: Lead[] = json.records.map(supabaseRowToLead);
+            saveLocalLeads(serverLeads);
+            return serverLeads;
+          }
+        }
+      } catch {
+        // Continue to local storage fallback
       }
     }
 
@@ -106,7 +126,20 @@ export const leadService = {
           console.warn('Supabase insert notice:', error.message);
         }
       } catch (err) {
-        console.warn('Supabase insert fallback to local storage:', err);
+        console.warn('Supabase insert fallback:', err);
+      }
+    }
+
+    // Server-side sync if in browser
+    if (typeof window !== 'undefined') {
+      try {
+        await fetch('/api/leads/db/sync-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: [newLead] }),
+        });
+      } catch {
+        // ignore network error
       }
     }
 
@@ -135,6 +168,23 @@ export const leadService = {
         }
       } catch (err) {
         console.warn('Supabase batch save fallback:', err);
+      }
+    }
+
+    // Automatically sync batch to server-side Supabase as well (in safe chunks of 30)
+    if (typeof window !== 'undefined' && leads.length > 0) {
+      const CHUNK_SIZE = 30;
+      for (let i = 0; i < leads.length; i += CHUNK_SIZE) {
+        const chunk = leads.slice(i, i + CHUNK_SIZE);
+        try {
+          await fetch('/api/leads/db/sync-batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leads: chunk }),
+          });
+        } catch {
+          // ignore network error
+        }
       }
     }
 
@@ -170,6 +220,18 @@ export const leadService = {
       }
     }
 
+    if (typeof window !== 'undefined') {
+      try {
+        await fetch(`/api/leads/db/records/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+      } catch {
+        // ignore
+      }
+    }
+
     // Update local cache
     const current = getLocalLeads();
     const updated = current.map((l) => (l.id === id ? { ...l, ...updates, updatedAt: now } : l));
@@ -190,6 +252,14 @@ export const leadService = {
         }
       } catch (err) {
         console.warn('Supabase deleteLead fallback:', err);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        await fetch(`/api/leads/db/records/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      } catch {
+        // ignore
       }
     }
 
@@ -216,6 +286,18 @@ export const leadService = {
       }
     }
 
+    if (typeof window !== 'undefined') {
+      try {
+        await Promise.allSettled(
+          ids.map((id) =>
+            fetch(`/api/leads/db/records/${encodeURIComponent(id)}`, { method: 'DELETE' })
+          )
+        );
+      } catch {
+        // ignore
+      }
+    }
+
     // Update local cache
     const current = getLocalLeads();
     const idSet = new Set(ids);
@@ -223,19 +305,19 @@ export const leadService = {
   },
 
   /**
-   * Deletes all leads (optionally scoped to userId) from Supabase and local cache.
+   * Deletes all leads (optionally scoped to userId or all users) from Supabase and local cache.
    */
-  async deleteAllLeads(userId?: string): Promise<void> {
+  async deleteAllLeads(userId?: string, purgeAll?: boolean): Promise<void> {
     const supabase = getSupabaseClient();
 
     if (supabase) {
       try {
         let query = supabase.from(LEADS_TABLE).delete();
-        if (userId) {
+        if (userId && !purgeAll) {
           query = query.eq('user_id', userId);
         } else {
-          // Supabase requires a filter for deletes; neq id to impossible dummy
-          query = query.neq('id', '__dummy_all__');
+          // Supabase requires a filter condition for batch delete
+          query = query.neq('id', '__dummy_impossible_all__');
         }
         const { error } = await query;
         if (error) {
@@ -246,8 +328,21 @@ export const leadService = {
       }
     }
 
+    // Server-side sync to delete from Supabase database via express backend
+    if (typeof window !== 'undefined') {
+      try {
+        const targetUrl =
+          userId && !purgeAll
+            ? `/api/leads/db/records?userId=${encodeURIComponent(userId)}`
+            : '/api/leads/db/records';
+        await fetch(targetUrl, { method: 'DELETE' });
+      } catch {
+        // ignore
+      }
+    }
+
     // Update local cache
-    if (userId) {
+    if (userId && !purgeAll) {
       const current = getLocalLeads();
       saveLocalLeads(current.filter((l) => l.userId !== userId));
     } else {

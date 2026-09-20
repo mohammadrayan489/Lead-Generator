@@ -17,6 +17,41 @@ export type OpportunityType =
   | 'digital_ads'
   | 'general';
 
+export interface GoogleMapsResearch {
+  hasListing: boolean;
+  placeUrl?: string;
+  rating?: number;
+  userRatingsTotal?: number;
+  verifiedOnMaps: boolean;
+  addressOnMaps?: string;
+  phoneOnMaps?: string;
+  websiteFieldOnMaps?: string;
+  statusSummary?: string;
+}
+
+export interface LinkedInResearch {
+  hasPage: boolean;
+  companyHandle?: string;
+  profileUrl?: string;
+  statusSummary?: string;
+}
+
+export interface TwitterResearch {
+  hasAccount: boolean;
+  handle?: string;
+  url?: string;
+  followersCount?: number;
+  statusSummary?: string;
+}
+
+export interface YouTubeResearch {
+  hasChannel: boolean;
+  channelName?: string;
+  channelUrl?: string;
+  subscribersCount?: number;
+  statusSummary?: string;
+}
+
 export interface SocialPresence {
   instagram?: {
     handle?: string;
@@ -30,9 +65,10 @@ export interface SocialPresence {
     pageUrl?: string;
     followersCount?: number;
   };
-  linkedin?: {
-    profileUrl?: string;
-  };
+  linkedin?: LinkedInResearch;
+  twitter?: TwitterResearch;
+  youtube?: YouTubeResearch;
+  googleMaps?: GoogleMapsResearch;
   hasStrongSocialPresence: boolean;
 }
 
@@ -41,6 +77,7 @@ export interface WebsiteInfo {
   hasWebsite: boolean;
   status: WebsiteStatus;
   checkedAt?: string;
+  auditNotes?: string;
 }
 
 export interface SalesOpportunity {
@@ -55,6 +92,50 @@ export interface WhatsAppPitch {
   message: string;
   recipientPhone?: string;
   generatedAt: string;
+}
+
+export type PlatformActivityLevel =
+  | 'verified_active'
+  | 'moderate_activity'
+  | 'low_activity'
+  | 'dormant_ghost'
+  | 'unverified_absent';
+
+export interface PlatformActivityValidation {
+  platform: 'instagram' | 'linkedin' | 'twitter' | 'youtube';
+  hasPresence: boolean;
+  isVerified: boolean;
+  activityLevel: PlatformActivityLevel;
+  activityScore: number; // 0-100 for this platform
+  activitySignals: string[];
+  inactivityPenalties: string[];
+  metrics?: {
+    followersOrSubscribers?: number;
+    hasEngagement?: boolean;
+    hasCommercialIntent?: boolean;
+    verifiedHandleOrUrl?: string;
+  };
+}
+
+export interface StrictSocialAudit {
+  overallActivityScore: number; // 0-100 critical rating based on real activity
+  activityGrade: 'A' | 'B' | 'C' | 'D' | 'F';
+  platforms: {
+    instagram: PlatformActivityValidation;
+    linkedin: PlatformActivityValidation;
+    twitter: PlatformActivityValidation;
+    youtube: PlatformActivityValidation;
+  };
+  criticalSummary: string;
+  dealBreakers: string[];
+}
+
+export interface DevilsAdvocateAnalysis {
+  toughCriticism: string;
+  redFlags: string[];
+  expectedObjection: string;
+  rebuttalStrategy: string;
+  riskLevel: 'low' | 'medium' | 'high';
 }
 
 export interface Lead {
@@ -74,9 +155,14 @@ export interface Lead {
   website: WebsiteInfo;
   social: SocialPresence;
   status: LeadStatus;
+  isStarred?: boolean;
+  hasBeenPitched?: boolean;
+  pitchedAt?: string;
   qualificationScore: number; // 0 to 100
   qualificationReasons: string[];
   opportunity: SalesOpportunity;
+  devilsAdvocate?: DevilsAdvocateAnalysis;
+  strictSocialAudit?: StrictSocialAudit;
   pitches: WhatsAppPitch[];
   notes?: string;
   followUpDate?: string;
@@ -121,6 +207,15 @@ export interface PipelineProgressState {
   message: string;
   discoveredCount: number;
   qualifiedCount: number;
+  targetTotal?: number;
+  currentLeadName?: string;
+  activePlatform?: 'google_maps' | 'linkedin' | 'twitter' | 'youtube' | 'instagram' | 'website_audit';
   intent?: QueryIntent;
   error?: string;
 }
+
+export type OnLeadDiscoveredCallback = (
+  lead: Lead,
+  currentIndex: number,
+  totalExpected: number
+) => void;
