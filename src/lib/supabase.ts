@@ -172,7 +172,7 @@ export function supabaseRowToLead(row: any): Lead {
     category: row.category || 'Business',
     location: {
       city: cleanCity,
-      state: row.state || 'Jammu & Kashmir',
+      state: row.state || 'Kashmir, J&K',
       country: row.country || 'India',
       address: row.address || undefined,
     },
@@ -199,7 +199,7 @@ export function supabaseRowToLead(row: any): Lead {
         rating: 4.6,
         userRatingsTotal: 88,
         verifiedOnMaps: true,
-        addressOnMaps: `${cleanAddress}, ${cleanCity}, Jammu & Kashmir`,
+        addressOnMaps: `${cleanAddress}, ${cleanCity}, Kashmir`,
         phoneOnMaps: row.phone || undefined,
         websiteFieldOnMaps: row.has_website ? (row.website_url || 'Active') : 'None (No website registered on Google Maps listing)',
         statusSummary: 'Verified Google Maps business profile. Phone verified; official website URL is empty.',

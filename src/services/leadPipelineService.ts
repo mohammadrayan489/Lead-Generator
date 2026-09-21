@@ -9,7 +9,7 @@ import { calculateLeadQualification } from '../utils/qualificationScore';
 import { extractInstagramHandle, ensureValidWhatsAppPhone } from '../utils/formatters';
 import {
   generateDiverseLeadCandidates,
-  normalizeJKCity,
+  normalizeKashmirCity,
   enrichCandidateWithMultiPlatformResearch,
   GeneratedLeadCandidate,
 } from './leadGeneratorPool';
@@ -96,7 +96,7 @@ export class AiLeadDiscoveryProvider implements SearchSourceProvider {
                 location: {
                   city: enriched.city,
                   address: enriched.address,
-                  state: 'Jammu & Kashmir',
+                  state: 'Kashmir, J&K',
                   country: 'India',
                 },
                 phone: ensureValidWhatsAppPhone(enriched.phone, `${enriched.name}_${enriched.city}`),
@@ -127,8 +127,8 @@ export class AiLeadDiscoveryProvider implements SearchSourceProvider {
       }
     }
 
-    // Authentic, diversified fallback leads strictly from Jammu and Kashmir
-    const city = normalizeJKCity(intent.targetLocation);
+    // Authentic, diversified fallback leads strictly from Kashmir
+    const city = normalizeKashmirCity(intent.targetLocation);
     const diverseCandidates = generateDiverseLeadCandidates(
       { ...intent, targetLocation: city, targetCount: requestedCount },
       requestedCount,
@@ -143,7 +143,7 @@ export class AiLeadDiscoveryProvider implements SearchSourceProvider {
       location: {
         city: item.city || city,
         address: item.address,
-        state: 'Jammu & Kashmir',
+        state: 'Kashmir, J&K',
         country: 'India',
       },
       phone: ensureValidWhatsAppPhone(item.phone, `${item.name}_${item.city}`),
@@ -194,12 +194,12 @@ export class LeadPipelineService {
 
         if (response.ok) {
           const data = await response.json();
-          const parsedCity = normalizeJKCity(data.location || query);
+          const parsedCity = normalizeKashmirCity(data.location || query);
           const finalCount = explicitCount !== null ? explicitCount : (data.count ? Math.min(100, Math.max(1, data.count)) : 15);
           return {
             originalQuery: query,
             businessCategory: data.businessType || 'Local Business',
-            targetLocation: `${parsedCity}, Jammu & Kashmir`,
+            targetLocation: `${parsedCity}, Kashmir`,
             targetCount: finalCount,
             filters: {
               noWebsite: Boolean(data.filters?.noWebsite),
@@ -218,9 +218,9 @@ export class LeadPipelineService {
     const isInstagram = /instagram|insta|ig/i.test(query);
     const count = explicitCount !== null ? explicitCount : 15;
 
-    // Detect J&K location or normalize to Srinagar / Jammu
-    const detectedCity = normalizeJKCity(query);
-    const targetLocation = `${detectedCity}, Jammu & Kashmir`;
+    // Detect Kashmir location or normalize to Srinagar
+    const detectedCity = normalizeKashmirCity(query);
+    const targetLocation = `${detectedCity}, Kashmir`;
 
     // Category extraction heuristic
     const categoryMatch = query.match(/(?:find\s+\d+\s+)?([A-Za-z\s&]+?)(?:\s+in\s+|\s+with|\s+without|\s+shops|\s+businesses|\s*$)/i);
@@ -326,7 +326,7 @@ export class LeadPipelineService {
         description: raw.description,
         location: {
           city: raw.location?.city || intent.targetLocation,
-          state: raw.location?.state || 'Jammu & Kashmir',
+          state: raw.location?.state || 'Kashmir, J&K',
           country: raw.location?.country || 'India',
           address: raw.location?.address,
           formattedAddress: raw.location?.formattedAddress,
@@ -394,7 +394,7 @@ export class LeadPipelineService {
           location: {
             city: item.city || intent.targetLocation,
             address: item.address,
-            state: 'Jammu & Kashmir',
+            state: 'Kashmir, J&K',
             country: 'India',
           },
           phone: item.phone,

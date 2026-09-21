@@ -36,11 +36,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
             )}
           </div>
           <input
+            id="main-discovery-search-input"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. Find 30 bridal boutiques in Srinagar with active Instagram and no website"
-            className="w-full py-3.5 pr-24 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent focus:outline-none text-sm sm:text-base font-normal"
+            className="w-full py-3.5 pl-1 pr-24 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent focus:outline-none text-xs sm:text-base font-normal truncate"
             disabled={isLoading}
           />
           {query && !isLoading && (

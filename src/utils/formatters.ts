@@ -14,7 +14,7 @@ export function cleanPhoneForWhatsApp(phone?: string): string {
 
 /**
  * Ensures a phone number is a valid, dialable WhatsApp-compatible mobile number.
- * If empty or invalid, provides an authentic Jammu & Kashmir mobile number (+91 9419x, +91 7006x, etc.).
+ * If empty or invalid, provides an authentic Kashmir mobile number (+91 9419x, +91 7006x, etc.).
  */
 export function ensureValidWhatsAppPhone(phone?: string, seedString?: string): string {
   if (phone && phone.trim()) {

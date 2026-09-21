@@ -372,7 +372,7 @@ export function performStrictSocialAudit(lead: Partial<Lead>): StrictSocialAudit
   const dealBreakers: string[] = [];
 
   // Weighted activity aggregation:
-  // In Jammu & Kashmir retail/artisan context:
+  // In Kashmir retail/artisan context:
   // Instagram accounts for 60% of real buyer acquisition
   // YouTube accounts for 18% (craftsmanship demonstration)
   // LinkedIn accounts for 12% (B2B wholesale)

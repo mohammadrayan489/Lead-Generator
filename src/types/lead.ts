@@ -1,11 +1,12 @@
 export type LeadStatus =
   | 'new'
+  | 'contacted'
+  | 'interested'
+  | 'qualified'
+  | 'lost'
   | 'discovered'
   | 'enriching'
   | 'verified'
-  | 'qualified'
-  | 'contacted'
-  | 'lost'
   | 'unqualified';
 
 export type WebsiteStatus = 'active' | 'broken' | 'none' | 'unreachable';

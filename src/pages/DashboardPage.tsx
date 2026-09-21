@@ -4,16 +4,19 @@ import { useLeadPipeline } from '../hooks/useLeadPipeline';
 import { useTheme } from '../hooks/useTheme';
 import { useWorkspaceUser } from '../hooks/useWorkspaceUser';
 import { SearchBar } from '../components/SearchBar';
+import { KashmirIndustryLeadForm } from '../components/KashmirIndustryLeadForm';
 import { LeadCard } from '../components/LeadCard';
 import { LeadDetailModal } from '../components/LeadDetailModal';
 import { PipelineProgress } from '../components/PipelineProgress';
 import { EmptyState } from '../components/EmptyState';
 import { SummaryHeader } from '../components/SummaryHeader';
+import { WhatsAppConversionTracker } from '../components/WhatsAppConversionTracker';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { TopLeadSearchBar } from '../components/TopLeadSearchBar';
 import { UserWorkspaceSwitcher } from '../components/UserWorkspaceSwitcher';
 import { NicheLeadSection } from '../components/NicheLeadSection';
 import { StagePipelineSection } from '../components/StagePipelineSection';
+import { MobileBottomNav, MobileTab } from '../components/MobileBottomNav';
 import { Lead, LeadStatus } from '../types/lead';
 import {
   NicheId,
@@ -45,6 +48,7 @@ import {
   Palette,
   CheckCircle2,
   MessageCircle,
+  Flame,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -90,6 +94,7 @@ export const DashboardPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'by_niche' | 'by_stage' | 'grid'>('by_niche');
   const [selectedNiche, setSelectedNiche] = useState<NicheId | 'all'>('all');
   const [selectedStage, setSelectedStage] = useState<LeadOutreachStage | 'all'>('all');
+  const [discoveryMode, setDiscoveryMode] = useState<'form' | 'quick'>('form');
 
   // Leads matching search, status, selected niche, and stage
   const displayedLeads = useMemo(() => {
@@ -120,6 +125,7 @@ export const DashboardPage: React.FC = () => {
       new: 0,
       pitched: 0,
       contacted: 0,
+      interested: 0,
       qualified: 0,
     };
     for (const lead of leads) {
@@ -263,97 +269,236 @@ export const DashboardPage: React.FC = () => {
     { value: 'all', label: 'All Leads', count: stats.total },
     { value: 'new', label: 'New', count: leads.filter((l) => l.status === 'new').length },
     { value: 'contacted', label: 'Contacted', count: stats.contacted },
+    { value: 'interested', label: 'Interested', count: stats.interested },
     { value: 'qualified', label: 'Qualified', count: stats.qualified },
     { value: 'lost', label: 'Lost', count: leads.filter((l) => l.status === 'lost').length },
     { value: 'discovered', label: 'Discovered', count: leads.filter((l) => l.status === 'discovered').length },
   ];
 
+  // Mobile Bottom Nav active tab determination
+  const activeMobileTab = useMemo<MobileTab>(() => {
+    if (selectedStage === 'pitched') {
+      return 'pitched';
+    }
+    if (viewMode === 'by_stage') {
+      return 'pipeline';
+    }
+    if (viewMode === 'by_niche') {
+      return 'niches';
+    }
+    return 'leads';
+  }, [selectedStage, viewMode]);
+
+  // Handle Mobile Bottom Nav item navigation
+  const handleSelectMobileTab = (tab: MobileTab) => {
+    if (tab === 'discover') {
+      const searchSec = document.getElementById('lead-search-section');
+      if (searchSec) {
+        searchSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      setTimeout(() => {
+        const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+          '#kashmir-industry-lead-generator-form textarea, #main-discovery-search-input'
+        );
+        input?.focus();
+      }, 250);
+      return;
+    }
+
+    if (tab === 'leads') {
+      setViewMode('grid');
+      setSelectedStage('all');
+      setSelectedNiche('all');
+      const leadsSec = document.getElementById('leads-section');
+      if (leadsSec) {
+        leadsSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
+    if (tab === 'niches') {
+      setViewMode('by_niche');
+      if (selectedStage === 'pitched') {
+        setSelectedStage('all');
+      }
+      const leadsSec = document.getElementById('leads-section');
+      if (leadsSec) {
+        leadsSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
+    if (tab === 'pipeline') {
+      setViewMode('by_stage');
+      if (selectedStage === 'pitched') {
+        setSelectedStage('all');
+      }
+      const leadsSec = document.getElementById('leads-section');
+      if (leadsSec) {
+        leadsSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
+    if (tab === 'pitched') {
+      if (selectedStage === 'pitched') {
+        setSelectedStage('all');
+      } else {
+        setSelectedStage('pitched');
+        setViewMode('grid');
+      }
+      const leadsSec = document.getElementById('leads-section');
+      if (leadsSec) {
+        leadsSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* Top Application Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-base shadow-sm">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-slate-900 dark:text-white leading-none">
-                  Lead-Generator
-                </h1>
-                <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 px-1.5 py-0.5 rounded">
-                  Jammu & Kashmir
-                </span>
+      <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-20 transition-colors shadow-2xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-base shadow-sm">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 hidden xl:block">
-                Jammu & Kashmir business lead research, qualification & WhatsApp outreach
-              </p>
+              <div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-none">
+                    Lead-Generator
+                  </h1>
+                  <span className="text-[10px] sm:text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 px-1.5 py-0.5 rounded">
+                    Kashmir Only
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 hidden xl:block">
+                  Kashmir business lead research, qualification & WhatsApp outreach
+                </p>
+              </div>
+            </div>
+
+            {/* Top Search Input Bar for Real-time Lead Filtering (Desktop) */}
+            <div className="hidden sm:block flex-1 max-w-xs sm:max-w-sm md:max-w-md mx-2 sm:mx-4">
+              <TopLeadSearchBar
+                id="top-dashboard-search-input"
+                value={searchFilter}
+                onChange={setSearchFilter}
+                totalMatches={filteredLeads.length}
+                totalLeads={leads.length}
+                placeholder="Search Kashmir leads by name, category, city..."
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Dark Mode Toggle Button */}
+              <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+
+              {/* Active User Workspace Selector & Creator */}
+              <UserWorkspaceSwitcher
+                currentUser={currentUser}
+                users={users}
+                onSwitchUser={switchUser}
+                onCreateUser={createUser}
+                onDeleteUser={deleteUser}
+                leadCount={leads.length}
+              />
+
+              <button
+                onClick={() => refreshLeads()}
+                disabled={isLeadsLoading}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 p-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors cursor-pointer"
+                title="Refresh and sync leads with Supabase"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLeadsLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden lg:inline">Sync Supabase</span>
+              </button>
             </div>
           </div>
 
-          {/* Top Search Input Bar for Real-time Lead Filtering */}
-          <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md mx-1 sm:mx-4">
+          {/* Full-width Search Bar for Mobile view */}
+          <div className="sm:hidden pb-2.5 pt-0.5">
             <TopLeadSearchBar
-              id="top-dashboard-search-input"
+              id="mobile-dashboard-search-input"
               value={searchFilter}
               onChange={setSearchFilter}
               totalMatches={filteredLeads.length}
               totalLeads={leads.length}
-              placeholder="Search J&K leads by name, company, city..."
+              placeholder="Search Kashmir leads..."
             />
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Dark Mode Toggle Button */}
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-
-            {/* Active User Workspace Selector & Creator */}
-            <UserWorkspaceSwitcher
-              currentUser={currentUser}
-              users={users}
-              onSwitchUser={switchUser}
-              onCreateUser={createUser}
-              onDeleteUser={deleteUser}
-              leadCount={leads.length}
-            />
-
-            <button
-              onClick={() => refreshLeads()}
-              disabled={isLeadsLoading}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-              title="Refresh and sync leads with Supabase"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLeadsLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden lg:inline">Sync Supabase</span>
-            </button>
           </div>
         </div>
       </header>
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 pb-28 md:pb-8">
         {/* Natural Language Prompt Area */}
-        <div className="mb-8">
+        <div id="lead-search-section" className="mb-8">
           <div className="text-center max-w-2xl mx-auto mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Jammu & Kashmir Lead Discovery
+              Kashmir Lead Discovery
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5">
-              Discover, verify, and qualify high-potential client leads across Srinagar, Jammu, and the Kashmir Valley.
+              Discover, verify, and qualify high-potential client leads exclusively across Srinagar and the Kashmir Valley.
             </p>
           </div>
 
-          <SearchBar onSearch={handleSearch} isLoading={isProcessing} />
+          {/* Discovery Mode Switcher: AI Industry Input Form vs Quick Search Bar */}
+          <div className="flex items-center justify-center mb-5">
+            <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-2xs">
+              <button
+                type="button"
+                id="tab-industry-lead-form"
+                onClick={() => setDiscoveryMode('form')}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  discoveryMode === 'form'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                <span>AI Industry Lead Form</span>
+              </button>
+              <button
+                type="button"
+                id="tab-quick-search-bar"
+                onClick={() => setDiscoveryMode('quick')}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  discoveryMode === 'quick'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Single-Line Query</span>
+              </button>
+            </div>
+          </div>
+
+          {discoveryMode === 'form' ? (
+            <div className="max-w-4xl mx-auto">
+              <KashmirIndustryLeadForm
+                onGenerate={handleSearch}
+                isLoading={isProcessing}
+                activeLeadCount={leads.length}
+              />
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto">
+              <SearchBar onSearch={handleSearch} isLoading={isProcessing} />
+            </div>
+          )}
 
           {/* Quick Niche Discovery Shortcuts */}
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">Quick J&K Niches:</span>
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Quick Kashmir Niches:</span>
             <button
               type="button"
               onClick={() => {
                 setSelectedNiche('gyms');
-                handleSearch('Find 30 gyms, CrossFit boxes and fitness centers in Srinagar and Jammu with active Instagram and no booking website');
+                handleSearch('Find 30 gyms, CrossFit boxes and fitness centers in Srinagar with active Instagram and no booking website');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors cursor-pointer font-medium"
             >
@@ -364,7 +509,7 @@ export const DashboardPage: React.FC = () => {
               type="button"
               onClick={() => {
                 setSelectedNiche('bridal_jewelry');
-                handleSearch('Find 35 bridal jewellery lounges, gold ateliers and wedding trousseau studios in Jammu and Polo View Srinagar');
+                handleSearch('Find 35 bridal jewellery lounges, gold ateliers and wedding trousseau studios in Polo View and Goni Khan Srinagar');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors cursor-pointer font-medium"
             >
@@ -375,7 +520,7 @@ export const DashboardPage: React.FC = () => {
               type="button"
               onClick={() => {
                 setSelectedNiche('cafes_dining');
-                handleSearch('Find 25 boutique cafes, artisan bakeries and dining spots in Rajbagh Srinagar and Gandhi Nagar Jammu with no online ordering');
+                handleSearch('Find 25 boutique cafes, artisan bakeries and dining spots in Rajbagh and Boulevard Srinagar with no online ordering');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors cursor-pointer font-medium"
             >
@@ -386,7 +531,7 @@ export const DashboardPage: React.FC = () => {
               type="button"
               onClick={() => {
                 setSelectedNiche('contractors');
-                handleSearch('Find 25 building contractors, interior decorators and HVAC electrical services in Srinagar and Jammu');
+                handleSearch('Find 25 building contractors, interior decorators and HVAC electrical services in Srinagar and Kashmir');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer font-medium"
             >
@@ -419,8 +564,11 @@ export const DashboardPage: React.FC = () => {
           onClearAll={() => setShowDeleteAllConfirm(true)}
         />
 
+        {/* Recharts-Powered WhatsApp Weekly Conversion Performance Widget */}
+        <WhatsAppConversionTracker leads={leads} />
+
         {/* Lead Management Section */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden transition-colors">
+        <div id="leads-section" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden transition-colors">
           {/* Controls Bar: View Modes & Search */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-slate-900">
             {/* View Mode Tabs */}
@@ -600,6 +748,19 @@ export const DashboardPage: React.FC = () => {
             >
               <MessageCircle className="w-3 h-3" />
               <span>Contacted ({stageCounts.contacted})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedStage('interested')}
+              className={`text-xs px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer shrink-0 flex items-center gap-1 ${
+                selectedStage === 'interested'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100 border border-emerald-200/50'
+              }`}
+            >
+              <Flame className="w-3 h-3 text-emerald-500" />
+              <span>Interested ({stageCounts.interested})</span>
             </button>
 
             <button
@@ -803,6 +964,18 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Static Fixed Bottom Navigation Menu for Mobile Devices */}
+      <MobileBottomNav
+        currentTab={activeMobileTab}
+        onSelectTab={handleSelectMobileTab}
+        totalLeadsCount={leads.length}
+        pitchedLeadsCount={stageCounts.pitched}
+        selectedNiche={selectedNiche}
+        onSelectNiche={setSelectedNiche}
+        nicheCounts={nicheCounts}
+        onScrollToTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      />
 
       {/* Modal View for detailed lead qualification & WhatsApp pitch */}
       <LeadDetailModal

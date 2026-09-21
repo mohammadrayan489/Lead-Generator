@@ -5,7 +5,12 @@ import {
   normalizeBusinessName,
   ensureValidWhatsAppPhone,
 } from '../utils/formatters';
-import { generateDiverseLeadCandidates, normalizeJKCity } from '../services/leadGeneratorPool';
+import {
+  generateDiverseLeadCandidates,
+  normalizeJKCity,
+  normalizeKashmirCity,
+  isKashmirLocation,
+} from '../services/leadGeneratorPool';
 import {
   getSupabaseClient,
   LEADS_TABLE,
@@ -30,13 +35,13 @@ router.post('/process-query', async (req, res) => {
   const countMatch = query.match(/\b(\d+)\b/);
   const explicitCount = countMatch ? Math.min(100, Math.max(1, parseInt(countMatch[1], 10))) : null;
 
-  // Attempt AI extraction via Gemini with multi-model fallback specialized for J&K
+  // Attempt AI extraction via Gemini with multi-model fallback specialized for Kashmir
   try {
     const response = await generateContentWithFallback({
-      contents: `Extract search parameters from the following natural-language request for business leads strictly in the Jammu and Kashmir (J&K), India region: "${query}".
-Note: This system strictly generates leads for Jammu & Kashmir, India.
-Target hubs: Srinagar, Jammu, Anantnag, Baramulla, Budgam, Pulwama, Pampore, Sopore, Gulmarg, Pahalgam, Udhampur, Kathua, etc.
-If the prompt specifies an outside region or no location, default to "Srinagar, Jammu & Kashmir" or "Jammu, Jammu & Kashmir".
+      contents: `Extract search parameters from the following natural-language request for business leads strictly in Kashmir (Kashmir Valley), India: "${query}".
+Note: This system strictly generates leads for Kashmir only.
+Target hubs: Srinagar, Anantnag, Baramulla, Budgam, Pulwama, Pampore, Sopore, Gulmarg, Pahalgam, Ganderbal, Kupwara, Bandipora, Kulgam, Shopian.
+If the prompt specifies Jammu or an outside region or no location, override and strictly default to "Srinagar, Kashmir".
 If the prompt requests a specific number of businesses (e.g. 10 or 100), extract that EXACT number into the count field.`,
       config: {
         responseMimeType: "application/json",
@@ -44,7 +49,7 @@ If the prompt requests a specific number of businesses (e.g. 10 or 100), extract
           type: Type.OBJECT,
           properties: {
             businessType: { type: Type.STRING, description: "Type or category of businesses (e.g., bridal fashion, walnut woodcraft, cafes, saffron traders)" },
-            location: { type: Type.STRING, description: "Target city or hub in Jammu & Kashmir (e.g. Srinagar, Jammu, Anantnag, Pampore, Gulmarg)" },
+            location: { type: Type.STRING, description: "Target city or hub in Kashmir (e.g. Srinagar, Anantnag, Pampore, Gulmarg, Baramulla)" },
             count: { type: Type.NUMBER, description: "Requested exact number of leads (e.g. 10, 100), default 15 if unspecified" },
             filters: {
               type: Type.OBJECT,
@@ -63,11 +68,11 @@ If the prompt requests a specific number of businesses (e.g. 10 or 100), extract
     const text = response.text;
     if (text) {
       const parsed = JSON.parse(text);
-      const normalizedCity = normalizeJKCity(parsed.location || query);
+      const normalizedCity = normalizeKashmirCity(parsed.location || query);
       const finalCount = explicitCount !== null ? explicitCount : (parsed.count ? Math.min(100, Math.max(1, parsed.count)) : 15);
       return res.json({
         ...parsed,
-        location: `${normalizedCity}, Jammu & Kashmir`,
+        location: `${normalizedCity}, Kashmir`,
         count: finalCount,
       });
     }
@@ -75,13 +80,13 @@ If the prompt requests a specific number of businesses (e.g. 10 or 100), extract
     // Graceful fallback without noisy stack trace
   }
 
-  // Resilient server-side extraction fallback guaranteed for Jammu & Kashmir
+  // Resilient server-side extraction fallback guaranteed for Kashmir
   const isNoWebsite = /no website|without website|no web/i.test(query);
   const isInstagram = /instagram|insta|ig/i.test(query);
   const count = explicitCount !== null ? explicitCount : 15;
 
-  const normalizedCity = normalizeJKCity(query);
-  const location = `${normalizedCity}, Jammu & Kashmir`;
+  const normalizedCity = normalizeKashmirCity(query);
+  const location = `${normalizedCity}, Kashmir`;
 
   const categoryMatch = query.match(/(?:find\s+\d+\s+)?([A-Za-z\s&]+?)(?:\s+in\s+|\s+with|\s+without|\s+shops|\s+businesses|\s*$)/i);
   let category = categoryMatch && categoryMatch[1] ? categoryMatch[1].trim() : 'Local Businesses';
@@ -112,9 +117,9 @@ router.post('/search', async (req, res) => {
     // Strictly respect the exact requested count up to 100
     const requestedCount = targetCount ? Math.min(100, Math.max(1, targetCount)) : 15;
 
-    // Guarantee location is anchored to Jammu & Kashmir
-    const jkCity = normalizeJKCity(targetLocation || intent.originalQuery);
-    const jkTargetLocation = `${jkCity}, Jammu & Kashmir`;
+    // Guarantee location is anchored strictly to Kashmir
+    const kashmirCity = normalizeKashmirCity(targetLocation || intent.originalQuery);
+    const kashmirTargetLocation = `${kashmirCity}, Kashmir`;
 
     // Combine exclusions from intent or top-level body
     const excludeNames: string[] = Array.isArray(intent.excludeNames)
@@ -139,16 +144,16 @@ router.post('/search', async (req, res) => {
       // Build specific exclusion clause for Gemini prompt
       const excludeSample = excludeNames.slice(0, 35).join(', ');
       const exclusionDirective = excludeSample
-        ? `\nCRITICAL DIVERSITY REQUIREMENT:\nThe user already has leads in their workspace. You MUST generate COMPLETELY DIFFERENT, FRESH, AND UNIQUE businesses.\nSTRICTLY DO NOT REPEAT ANY of these previously found business names: [${excludeSample}].\nExplore different neighborhoods, diverse market streets, specialized artisans, emerging designers, and distinct workshops in ${jkTargetLocation}.\n`
-        : `\nEnsure high variety across different market streets, neighborhoods, and artisan niches in ${jkTargetLocation}.\n`;
+        ? `\nCRITICAL DIVERSITY REQUIREMENT:\nThe user already has leads in their workspace. You MUST generate COMPLETELY DIFFERENT, FRESH, AND UNIQUE businesses.\nSTRICTLY DO NOT REPEAT ANY of these previously found business names: [${excludeSample}].\nExplore different neighborhoods, diverse market streets, specialized artisans, emerging designers, and distinct workshops in ${kashmirTargetLocation}.\n`
+        : `\nEnsure high variety across different market streets, neighborhoods, and artisan niches in ${kashmirTargetLocation}.\n`;
 
-      const prompt = `You are an expert real-world B2B lead researcher specializing EXCLUSIVELY in Jammu and Kashmir (J&K), India.
+      const prompt = `You are an expert real-world B2B lead researcher specializing EXCLUSIVELY in the Kashmir Valley, India.
 CRITICAL REGIONAL DIRECTIVE:
-Every single lead MUST be an authentic, realistic local business situated strictly within Jammu & Kashmir, India (primary commercial hubs include Srinagar, Jammu, Anantnag, Baramulla, Budgam, Pulwama, Pampore, Sopore, Gulmarg, Pahalgam, Udhampur, Kathua, etc.).
-NEVER generate or return businesses from any other state or country.
+Every single lead MUST be an authentic, realistic local business situated strictly within KASHMIR only (primary commercial hubs include Srinagar, Anantnag, Baramulla, Budgam, Pulwama, Pampore, Sopore, Gulmarg, Pahalgam, Ganderbal, Kupwara, Bandipora, Kulgam, Shopian).
+STRICTLY FORBIDDEN: Do NOT generate or return any businesses from Jammu city, Jammu division, or anywhere outside Kashmir. ONLY KASHMIR LEADS ARE PERMITTED.
 
 Category: ${businessCategory}
-Location: ${jkTargetLocation} (Must be strictly within Jammu & Kashmir, India)
+Location: ${kashmirTargetLocation} (Must be strictly within Kashmir, India)
 Criteria:
 - Without website: ${filters?.noWebsite ? 'YES, businesses that operate purely through social media/brick-and-mortar and DO NOT have an official domain/website' : 'Any'}
 - Strong social presence: ${filters?.strongSocialPresence ? 'YES, businesses with active Instagram presence' : 'Any'}
@@ -160,7 +165,7 @@ CRITICAL TRUTH IN SOCIAL MEDIA REPORTING:
 - If the business is an established brand with a known Instagram account, provide its exact public username without the '@' symbol.
 - CRITICAL WHATSAPP REQUIREMENT: EVERY SINGLE LEAD MUST ALWAYS INCLUDE A DIRECT, VALID INDIAN WHATSAPP NUMBER (+91 9419x, +91 7006x, +91 9906x, +91 9797x, +91 9622x, +91 7889x, or +91 6005x). NEVER LEAVE PHONE EMPTY.
 
-Provide realistic business details for ${jkTargetLocation} including business name, precise category, local address/market in ${jkCity} (${jkTargetLocation}), direct WhatsApp phone number (+91 9419x, +91 7006x, etc.), verified Instagram handle (or empty "" if no social media), follower count (0 if no social media), and whether they have an active website or not.`;
+Provide realistic business details for ${kashmirTargetLocation} including business name, precise category, local address/market in ${kashmirCity} (${kashmirTargetLocation}), direct WhatsApp phone number (+91 9419x, +91 7006x, etc.), verified Instagram handle (or empty "" if no social media), follower count (0 if no social media), and whether they have an active website or not.`;
 
       const response = await generateContentWithFallback({
         contents: prompt,
@@ -199,10 +204,11 @@ Provide realistic business details for ${jkTargetLocation} including business na
             .map((item: any) => {
               const handle = extractInstagramHandle(item.instagramHandle);
               const cleanPhone = ensureValidWhatsAppPhone(item.phone, `${item.name}_${item.city}`);
+              const cleanCity = normalizeKashmirCity(item.city || kashmirCity);
               return {
                 ...item,
-                city: normalizeJKCity(item.city || jkCity),
-                state: 'Jammu & Kashmir',
+                city: cleanCity,
+                state: 'Kashmir, J&K',
                 country: 'India',
                 phone: cleanPhone,
                 instagramHandle: handle || '',
@@ -211,6 +217,7 @@ Provide realistic business details for ${jkTargetLocation} including business na
               };
             })
             .filter((item: any) => {
+              if (!isKashmirLocation(item.city, item.address)) return false;
               const normName = normalizeBusinessName(item.name || '');
               const handle = (item.instagramHandle || '').toLowerCase();
               if (excludedNameSet.has(normName) || (handle && excludedHandleSet.has(handle))) {
@@ -224,7 +231,7 @@ Provide realistic business details for ${jkTargetLocation} including business na
             return res.json(validUnique.slice(0, requestedCount));
           } else if (validUnique.length > 0) {
             const supplemental = generateDiverseLeadCandidates(
-              { ...intent, targetLocation: jkCity },
+              { ...intent, targetLocation: kashmirCity },
               requestedCount - validUnique.length,
               [...excludeNames, ...validUnique.map((l: any) => l.name)],
               [...excludeHandles, ...validUnique.map((l: any) => l.instagramHandle)]
@@ -237,9 +244,9 @@ Provide realistic business details for ${jkTargetLocation} including business na
       // Model fallback triggered; seamlessly generate verified diverse local candidates
     }
 
-    // High-quality diversified candidate generator guaranteeing unique, non-repeating J&K leads
+    // High-quality diversified candidate generator guaranteeing unique, non-repeating Kashmir leads
     const freshDiverseLeads = generateDiverseLeadCandidates(
-      { ...intent, targetLocation: jkCity },
+      { ...intent, targetLocation: kashmirCity },
       requestedCount,
       excludeNames,
       excludeHandles

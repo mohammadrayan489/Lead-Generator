@@ -25,6 +25,7 @@ export interface UseLeadsReturn {
     qualified: number;
     needsWebsite: number;
     contacted: number;
+    interested: number;
     lost: number;
   };
 }
@@ -136,6 +137,7 @@ export function useLeads(userId: string = 'demo_workspace_user'): UseLeadsReturn
       qualified: leads.filter((l) => l.status === 'qualified').length,
       needsWebsite: leads.filter((l) => !l.website.hasWebsite).length,
       contacted: leads.filter((l) => l.status === 'contacted').length,
+      interested: leads.filter((l) => l.status === 'interested').length,
       lost: leads.filter((l) => l.status === 'lost' || l.status === 'unqualified').length,
     };
   }, [leads]);

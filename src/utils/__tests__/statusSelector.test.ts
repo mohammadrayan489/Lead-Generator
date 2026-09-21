@@ -6,8 +6,8 @@ import {
 import { LeadStatus } from '../../types/lead';
 
 describe('StatusSelector and Sales Pipeline Configurations', () => {
-  it('includes core sales pipeline statuses: new, contacted, qualified, lost', () => {
-    const requiredStatuses: LeadStatus[] = ['new', 'contacted', 'qualified', 'lost'];
+  it('includes core sales pipeline statuses: new, contacted, interested, qualified, lost', () => {
+    const requiredStatuses: LeadStatus[] = ['new', 'contacted', 'interested', 'qualified', 'lost'];
 
     for (const status of requiredStatuses) {
       expect(ORDERED_PIPELINE_STATUSES).toContain(status);
@@ -23,6 +23,7 @@ describe('StatusSelector and Sales Pipeline Configurations', () => {
   it('provides distinct, high-contrast visual styling for each pipeline stage', () => {
     expect(PIPELINE_STATUS_CONFIG.new.label).toBe('New');
     expect(PIPELINE_STATUS_CONFIG.contacted.label).toBe('Contacted');
+    expect(PIPELINE_STATUS_CONFIG.interested.label).toBe('Interested');
     expect(PIPELINE_STATUS_CONFIG.qualified.label).toBe('Qualified');
     expect(PIPELINE_STATUS_CONFIG.lost.label).toBe('Lost');
 

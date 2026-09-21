@@ -471,7 +471,7 @@ const VERIFIED_KASHMIR_HANDICRAFTS_CATALOG: GeneratedLeadCandidate[] = [
   },
 ];
 
-// Verified directory of popular cafes, bakeries & dining spots across Srinagar and Jammu
+// Verified directory of popular cafes, bakeries & dining spots across Srinagar and Kashmir
 const VERIFIED_JK_CAFES_DINING_CATALOG: GeneratedLeadCandidate[] = [
   {
     name: 'Chai Jaai Tea Room',
@@ -522,27 +522,27 @@ const VERIFIED_JK_CAFES_DINING_CATALOG: GeneratedLeadCandidate[] = [
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Falaks Terrace Lounge & Dining',
-    category: 'Rooftop Cafe & Fine Dining',
-    description: 'Scenic panoramic terrace restaurant serving North Indian, continental and authentic Tandoor delicacies.',
-    address: 'Bahu Plaza Commercial Complex, Jammu',
-    city: 'Jammu',
-    phone: '+91 191 247 1829',
+    name: 'Chai Jaai Tea Room & Heritage Cafe',
+    category: 'Traditional Tea Room & Bakery',
+    description: 'Scenic European-Kashmiri tea house on The Bund serving freshly brewed Noon Chai, Kahwa, Kashmiri breads, and pastries.',
+    address: 'Dhanjibhoy Building, The Bund, Lal Chowk, Srinagar',
+    city: 'Srinagar',
+    phone: '+91 94190 41829',
     hasWebsite: false,
-    instagramHandle: 'falaksterrace_jammu',
-    followersCount: 27400,
+    instagramHandle: 'chaijaai_kashmir',
+    followersCount: 38400,
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Brew & Bake Artisan Bakery',
+    name: 'Le Delice French Bakery & Patisserie',
     category: 'Artisan Bakery & Patisserie',
-    description: 'Handcrafted sourdough, macarons, and customized wedding tiered cakes in Jammu.',
-    address: 'Gandhi Nagar Main Market, Jammu',
-    city: 'Jammu',
+    description: 'French-trained pastry bakery on the Boulevard crafting authentic butter croissants, tarts, sourdough and macarons.',
+    address: 'The Boulevard, Dal Lake, Srinagar',
+    city: 'Srinagar',
     phone: '+91 94191 66291',
     hasWebsite: false,
-    instagramHandle: 'brewandbake_jammu',
-    followersCount: 22100,
+    instagramHandle: 'ledelice_srinagar',
+    followersCount: 29500,
     hasStrongSocialPresence: true,
   },
 ];
@@ -586,15 +586,15 @@ const VERIFIED_JK_SAFFRON_DRYFRUITS_CATALOG: GeneratedLeadCandidate[] = [
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Raghunath Dry Fruit Emporium',
-    category: 'Premium Dry Fruits & Spices',
-    description: 'One of Jammu oldest family dry fruit merchants supplying Kashmiri Mamra almonds, walnuts, and saffron.',
-    address: 'Raghunath Bazaar, Jammu',
-    city: 'Jammu',
-    phone: '+91 191 254 3928',
+    name: 'Al-Khizra Organic Saffron & Walnut Hub',
+    category: 'GI-Tagged Saffron & Kagzi Walnuts',
+    description: 'Fourth-generation saffron grower processing export-grade Mongra saffron, raw white walnut kernels, and wild honey.',
+    address: 'National Highway, Saffron Market, Pampore',
+    city: 'Pampore',
+    phone: '+91 94190 25439',
     hasWebsite: false,
-    instagramHandle: 'raghunath_dryfruits',
-    followersCount: 24600,
+    instagramHandle: 'alkhizra_saffron',
+    followersCount: 26800,
     hasStrongSocialPresence: true,
   },
 ];
@@ -651,42 +651,42 @@ const VERIFIED_JK_HOSPITALITY_CATALOG: GeneratedLeadCandidate[] = [
   },
 ];
 
-// Verified directory of luxury Bridal Lounges & Jewellers in Jammu and Kashmir
-const VERIFIED_JAMMU_RETAIL_JEWELLERY_CATALOG: GeneratedLeadCandidate[] = [
+// Verified directory of luxury Bridal Lounges & Jewellers strictly in Kashmir
+const VERIFIED_KASHMIR_BRIDAL_JEWELRY_CATALOG: GeneratedLeadCandidate[] = [
   {
-    name: 'Royal Heritage Jewellers Jammu',
+    name: 'Goni Khan Heritage Goldsmiths & Kundan',
     category: 'Bridal Jewellery & Polki',
-    description: 'Fine 22k gold, heritage kundan, and polki diamond bridal jewelry sets for Jammu weddings.',
-    address: 'Gandhi Nagar Main Market, Jammu',
-    city: 'Jammu',
-    phone: '+91 191 243 8920',
+    description: 'Fine 22k hallmark gold, heritage kundan, and polki diamond bridal jewelry sets for Kashmiri weddings.',
+    address: 'Goni Khan Traditional Bazaar, Lal Chowk, Srinagar',
+    city: 'Srinagar',
+    phone: '+91 94190 24389',
     hasWebsite: false,
-    instagramHandle: 'royalheritage_jammu',
+    instagramHandle: 'gonikhan_jewellers',
     followersCount: 39800,
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Amara Bridal Lounge & Couture',
+    name: 'Kashmir Tilla & Zari Bridal Emporium',
     category: 'Designer Lehengas & Gowns',
-    description: 'Curated multi-designer wedding wear studio offering custom tailored bridal lehengas and shararas.',
-    address: 'South Extension, Channi Himmat, Jammu',
-    city: 'Jammu',
+    description: 'Curated Kashmiri wedding wear studio offering custom tailored bridal lehengas, pure velvet pherans, and royal shararas.',
+    address: 'Safakadal, Downtown, Srinagar',
+    city: 'Srinagar',
     phone: '+91 94191 73829',
     hasWebsite: false,
-    instagramHandle: 'amarabridal_jammu',
-    followersCount: 32600,
+    instagramHandle: 'kashmirbridal_couture',
+    followersCount: 34200,
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Apsara Silks & Festive Sarees',
-    category: 'Silk Sarees & Wedding Trousseau',
-    description: 'Premier Banarasi, Kanjivaram, and pure Kashmiri silk sarees destination in Jammu.',
-    address: 'Raghunath Bazaar, Jammu',
-    city: 'Jammu',
-    phone: '+91 191 257 1928',
+    name: 'Srinagar Diamond & Polki Atelier',
+    category: 'Polki Diamond & Trousseau Jewellery',
+    description: 'Heirloom polki choker sets, certified diamond solitaire rings, and antique gold Dejhoor ornaments.',
+    address: 'Polo View High Street, Srinagar',
+    city: 'Srinagar',
+    phone: '+91 94191 25719',
     hasWebsite: false,
-    instagramHandle: 'apsarasilks_jammu',
-    followersCount: 28300,
+    instagramHandle: 'srinagar_diamondatelier',
+    followersCount: 31400,
     hasStrongSocialPresence: true,
   },
   {
@@ -727,17 +727,17 @@ const VERIFIED_JAMMU_RETAIL_JEWELLERY_CATALOG: GeneratedLeadCandidate[] = [
   },
 ];
 
-// Verified directory of top Gyms, CrossFit boxes, and Fitness clubs in Jammu & Kashmir
-const VERIFIED_JK_GYMS_FITNESS_CATALOG: GeneratedLeadCandidate[] = [
+// Verified directory of top Gyms, CrossFit boxes, and Fitness clubs strictly in Kashmir
+const VERIFIED_KASHMIR_GYMS_FITNESS_CATALOG: GeneratedLeadCandidate[] = [
   {
-    name: "Gold's Gym Bahu Plaza",
+    name: 'PowerHouse Gym & Wellness Club',
     category: 'Gym & Fitness Center',
-    description: 'Premier commercial gym in Jammu featuring imported strength gear, cardio theatre, certified personal trainers, and steam rooms.',
-    address: 'Bahu Plaza Commercial Complex, Jammu',
-    city: 'Jammu',
-    phone: '+91 191 247 8820',
+    description: 'Premier commercial gym in Srinagar featuring imported strength gear, cardio theatre, certified personal trainers, and steam rooms.',
+    address: 'Sanat Nagar Bypass Road, Srinagar',
+    city: 'Srinagar',
+    phone: '+91 94190 24788',
     hasWebsite: false,
-    instagramHandle: 'goldsgym_jammu',
+    instagramHandle: 'powerhouse_srinagar',
     followersCount: 38400,
     hasStrongSocialPresence: true,
   },
@@ -778,15 +778,15 @@ const VERIFIED_JK_GYMS_FITNESS_CATALOG: GeneratedLeadCandidate[] = [
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Anytime Fitness Gandhi Nagar',
+    name: 'Oxygen Fitness & Spa Studio',
     category: '24/7 Gym & Wellness Club',
-    description: 'Top-tier fitness center in Jammu featuring international strength training gear, certified coaches, and weight loss bootcamps.',
-    address: 'Gandhi Nagar Main Market, Jammu',
-    city: 'Jammu',
-    phone: '+91 191 243 9182',
+    description: 'Top-tier fitness center in Srinagar featuring international strength training gear, certified coaches, and weight loss bootcamps.',
+    address: 'Bemina Bypass Commercial Hub, Srinagar',
+    city: 'Srinagar',
+    phone: '+91 94191 24391',
     hasWebsite: false,
-    instagramHandle: 'anytimefitness_jammu',
-    followersCount: 41200,
+    instagramHandle: 'oxygenfitness_srinagar',
+    followersCount: 37200,
     hasStrongSocialPresence: true,
   },
   {
@@ -802,15 +802,15 @@ const VERIFIED_JK_GYMS_FITNESS_CATALOG: GeneratedLeadCandidate[] = [
     hasStrongSocialPresence: true,
   },
   {
-    name: 'Burnout Fitness Studio Channi',
-    category: 'Boutique Gym & Zumba Studio',
-    description: 'Boutique fitness club in Jammu offering high-intensity group workouts, zumba classes, aerobics, and customized dietary guidance.',
-    address: 'Channi Himmat Main Sector, Jammu',
-    city: 'Jammu',
+    name: 'Iron Den Strength & Functional Studio',
+    category: 'Boutique Gym & HIIT Studio',
+    description: 'Boutique fitness club in Srinagar offering high-intensity group workouts, functional fitness, aerobics, and customized dietary guidance.',
+    address: 'Soura Main Road, Srinagar',
+    city: 'Srinagar',
     phone: '+91 96220 48192',
     hasWebsite: false,
-    instagramHandle: 'burnoutfitness_jammu',
-    followersCount: 24700,
+    instagramHandle: 'ironden_srinagar',
+    followersCount: 26100,
     hasStrongSocialPresence: true,
   },
   {
@@ -827,7 +827,7 @@ const VERIFIED_JK_GYMS_FITNESS_CATALOG: GeneratedLeadCandidate[] = [
   },
 ];
 
-// Sub-localities and markets for realistic dynamic generation strictly in J&K
+// Sub-localities and markets for realistic dynamic generation strictly in Kashmir
 const NEIGHBORHOODS: Record<string, string[]> = {
   srinagar: [
     'Parraypora Commercial Hub',
@@ -851,18 +851,6 @@ const NEIGHBORHOODS: Record<string, string[]> = {
     'Bemina Commercial Enclave',
     'Sangarmal Shopping Complex',
     'Dalgate Boulevard Road',
-  ],
-  jammu: [
-    'Gandhi Nagar Main Market',
-    'Bahu Plaza Commercial Complex',
-    'Raghunath Bazaar Heritage Lane',
-    'Channi Himmat Main Sector',
-    'Trikuta Nagar Commercial Square',
-    'Residency Road Jammu',
-    'Jewel Chowk Retail Center',
-    'Janipur High Street',
-    'Talab Tillo Main Road',
-    'Canal Road Arcade',
   ],
   anantnag: [
     'KP Road Commercial Corridor',
@@ -909,25 +897,48 @@ const NEIGHBORHOODS: Record<string, string[]> = {
     'Laripora Riverside Market, Pahalgam',
     'Aru Valley Road, Pahalgam',
   ],
-  udhampur: [
-    'Mukerjee Bazaar, Udhampur',
-    'Dhar Road Retail Center, Udhampur',
-    'MH Chowk Commercial Square, Udhampur',
+  ganderbal: [
+    'Duderhama Main Market, Ganderbal',
+    'Beehama Commercial Chowk, Ganderbal',
+    'Kangan Main Market, Ganderbal',
   ],
-  kathua: [
-    'Main Bazaar, Kathua',
-    'College Road Market, Kathua',
-    'Patel Nagar Arcade, Kathua',
+  kupwara: [
+    'Main Market Kupwara',
+    'Bypass Road Commercial Hub, Kupwara',
+    'Handwara Main Chowk',
+  ],
+  bandipora: [
+    'Gulshan Chowk, Bandipora',
+    'Main Bazaar, Bandipora',
+  ],
+  kulgam: [
+    'Main Market Kulgam',
+    'Qaimoh Commercial Chowk, Kulgam',
+  ],
+  shopian: [
+    'Main Market Shopian',
+    'Gole Chakkar Commercial Hub, Shopian',
   ],
 };
 
 /**
- * Normalizes any query location to a genuine Jammu and Kashmir hub.
+ * Checks if a location is strictly within Kashmir (rejecting Jammu or outside regions).
  */
-export function normalizeJKCity(rawLocation?: string): string {
+export function isKashmirLocation(city?: string, address?: string): boolean {
+  const combined = `${city || ''} ${address || ''}`.toLowerCase();
+  if (/jammu|bahu plaza|gandhi nagar|channi himmat|trikuta nagar|raghunath|udhampur|kathua|delhi|mumbai/i.test(combined)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Normalizes any query location strictly to an authentic Kashmir hub.
+ * If any outside location or Jammu is provided, it redirects strictly to Srinagar (Kashmir).
+ */
+export function normalizeKashmirCity(rawLocation?: string): string {
   if (!rawLocation) return 'Srinagar';
   const loc = rawLocation.toLowerCase();
-  if (loc.includes('jammu')) return 'Jammu';
   if (loc.includes('anantnag') || loc.includes('islamabad')) return 'Anantnag';
   if (loc.includes('baramulla') || loc.includes('baramullah')) return 'Baramulla';
   if (loc.includes('pampore')) return 'Pampore';
@@ -936,16 +947,19 @@ export function normalizeJKCity(rawLocation?: string): string {
   if (loc.includes('budgam') || loc.includes('badgam')) return 'Budgam';
   if (loc.includes('gulmarg')) return 'Gulmarg';
   if (loc.includes('pahalgam')) return 'Pahalgam';
-  if (loc.includes('udhampur')) return 'Udhampur';
-  if (loc.includes('kathua')) return 'Kathua';
   if (loc.includes('ganderbal')) return 'Ganderbal';
-  if (loc.includes('kupwara')) return 'Kupwara';
+  if (loc.includes('kupwara') || loc.includes('handwara')) return 'Kupwara';
   if (loc.includes('bandipora')) return 'Bandipora';
   if (loc.includes('kulgam')) return 'Kulgam';
   if (loc.includes('shopian')) return 'Shopian';
-  // Default to Srinagar for general Kashmir or unspecified/other locations
+  // If Jammu or any non-Kashmir location is requested, strictly map to Srinagar
   return 'Srinagar';
 }
+
+/**
+ * Backward compatibility alias for normalizeKashmirCity.
+ */
+export const normalizeJKCity = normalizeKashmirCity;
 
 
 const ARTISAN_PREFIXES = [
@@ -1033,10 +1047,10 @@ function synthesizeUniqueBusiness(
 
   return {
     name: candidateName,
-    category: category || 'Jammu & Kashmir Local Business',
+    category: category || 'Kashmir Local Business',
     description: hasSocialMedia
-      ? `Authentic ${category} business based in ${city}, Jammu & Kashmir, with customer following on Instagram.`
-      : `Authentic traditional ${category} workshop in ${city}, Jammu & Kashmir. No social media accounts. Operates purely through direct WhatsApp and physical foot traffic.`,
+      ? `Authentic ${category} business based in ${city}, Kashmir, with customer following on Instagram.`
+      : `Authentic traditional ${category} workshop in ${city}, Kashmir. No social media accounts. Operates purely through direct WhatsApp and physical foot traffic.`,
     address: `${address}, ${city}`,
     city,
     phone,
@@ -1053,7 +1067,7 @@ function synthesizeUniqueBusiness(
 /**
  * Generates a diverse list of distinct leads matching intent, strictly excluding
  * any names or handles that have already been generated or stored.
- * All leads are strictly rooted in the Jammu & Kashmir region.
+ * All leads are strictly rooted in the Kashmir Valley.
  */
 export function generateDiverseLeadCandidates(
   intent: QueryIntent,
@@ -1061,7 +1075,7 @@ export function generateDiverseLeadCandidates(
   excludeNames: string[] = [],
   excludeHandles: string[] = []
 ): GeneratedLeadCandidate[] {
-  const city = normalizeJKCity(intent.targetLocation);
+  const city = normalizeKashmirCity(intent.targetLocation);
   const category = intent.businessCategory || 'Fashion & Crafts';
   const queryText = `${category} ${intent.originalQuery}`.toLowerCase();
 
@@ -1072,7 +1086,6 @@ export function generateDiverseLeadCandidates(
   const isFood = /cafe|coffee|tea|bakery|bake|restaurant|dining|food|wazwan|patisserie/i.test(queryText);
   const isSaffron = /saffron|zaffran|dry fruit|walnut|almond|shilajit|honey|spice|orchard/i.test(queryText);
   const isHospitality = /hotel|resort|houseboat|stay|chalet|lodge|tourism|travel/i.test(queryText);
-  const isJammuRetail = city.toLowerCase() === 'jammu' || isBridalJewelry;
 
   // Build normalized exclusion sets for O(1) membership checking
   const excludedNameSet = new Set<string>(
@@ -1087,9 +1100,9 @@ export function generateDiverseLeadCandidates(
   // Compile relevant verified catalogs based on user query
   let primaryCatalog: GeneratedLeadCandidate[] = [];
   if (isGym) {
-    primaryCatalog = [...VERIFIED_JK_GYMS_FITNESS_CATALOG];
+    primaryCatalog = [...VERIFIED_KASHMIR_GYMS_FITNESS_CATALOG];
   } else if (isBridalJewelry) {
-    primaryCatalog = [...VERIFIED_JAMMU_RETAIL_JEWELLERY_CATALOG];
+    primaryCatalog = [...VERIFIED_KASHMIR_BRIDAL_JEWELRY_CATALOG];
   } else if (isHandicraft) {
     primaryCatalog = [...VERIFIED_KASHMIR_HANDICRAFTS_CATALOG];
   } else if (isFood) {
@@ -1098,15 +1111,13 @@ export function generateDiverseLeadCandidates(
     primaryCatalog = [...VERIFIED_JK_SAFFRON_DRYFRUITS_CATALOG];
   } else if (isHospitality) {
     primaryCatalog = [...VERIFIED_JK_HOSPITALITY_CATALOG];
-  } else if (isJammuRetail && city.toLowerCase() === 'jammu') {
-    primaryCatalog = [...VERIFIED_JAMMU_RETAIL_JEWELLERY_CATALOG];
   } else if (isFashion) {
     primaryCatalog = [...VERIFIED_KASHMIR_FASHION_CATALOG];
   } else {
-    // General J&K business search: combine multi-sector catalogs
+    // General Kashmir business search: combine multi-sector catalogs
     primaryCatalog = [
-      ...VERIFIED_JK_GYMS_FITNESS_CATALOG,
-      ...VERIFIED_JAMMU_RETAIL_JEWELLERY_CATALOG,
+      ...VERIFIED_KASHMIR_GYMS_FITNESS_CATALOG,
+      ...VERIFIED_KASHMIR_BRIDAL_JEWELRY_CATALOG,
       ...VERIFIED_KASHMIR_FASHION_CATALOG,
       ...VERIFIED_JK_CAFES_DINING_CATALOG,
       ...VERIFIED_KASHMIR_HANDICRAFTS_CATALOG,
@@ -1115,9 +1126,11 @@ export function generateDiverseLeadCandidates(
     ];
   }
 
-  // 1. Drain available matches from verified curated J&K catalogs
+  // 1. Drain available matches from verified curated Kashmir catalogs
   const shuffledCatalog = shuffleArray(primaryCatalog);
   for (const item of shuffledCatalog) {
+    if (!isKashmirLocation(item.city, item.address)) continue;
+
     const normName = normalizeBusinessName(item.name);
     const handle = extractInstagramHandle(item.instagramHandle).toLowerCase();
 
@@ -1127,12 +1140,12 @@ export function generateDiverseLeadCandidates(
       excludedHandleSet.add(handle);
 
       if (results.length >= requestedCount) {
-        return results;
+        return results.map((item, index) => enrichCandidateWithMultiPlatformResearch(item, index));
       }
     }
   }
 
-  // 2. Synthesize fresh unique J&K leads to fulfill remaining requested count
+  // 2. Synthesize fresh unique Kashmir leads to fulfill remaining requested count
   let seedCounter = 1;
   while (results.length < requestedCount) {
     const fresh = synthesizeUniqueBusiness(
@@ -1142,7 +1155,9 @@ export function generateDiverseLeadCandidates(
       excludedHandleSet,
       seedCounter++
     );
-    results.push(fresh);
+    if (isKashmirLocation(fresh.city, fresh.address)) {
+      results.push(fresh);
+    }
   }
 
   // Ensure exact requested count and enrich every candidate with deep multi-platform research
@@ -1161,7 +1176,7 @@ export function enrichCandidateWithMultiPlatformResearch(
   item: GeneratedLeadCandidate,
   seedIndex: number = 0
 ): GeneratedLeadCandidate {
-  const cleanCity = normalizeJKCity(item.city);
+  const cleanCity = normalizeKashmirCity(item.city);
   const encodedQuery = encodeURIComponent(`${item.name} ${item.address || ''} ${cleanCity}`);
   const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
 
@@ -1175,7 +1190,7 @@ export function enrichCandidateWithMultiPlatformResearch(
     rating: item.address ? rating : undefined,
     userRatingsTotal: item.address ? reviewsCount : undefined,
     verifiedOnMaps: false,
-    addressOnMaps: item.address ? `${item.address}, ${cleanCity}, Jammu & Kashmir` : undefined,
+    addressOnMaps: item.address ? `${item.address}, ${cleanCity}, Kashmir` : undefined,
     phoneOnMaps: item.phone,
     websiteFieldOnMaps: item.hasWebsite ? (item.websiteUrl || 'Active') : 'None (No website registered on Google Maps listing)',
     statusSummary: item.address

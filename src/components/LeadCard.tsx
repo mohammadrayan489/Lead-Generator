@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lead, LeadStatus } from '../types/lead';
 import { StatusBadge } from './StatusBadge';
 import { StatusSelector } from './StatusSelector';
+import { LeadStatusTracker } from './LeadStatusTracker';
 import {
   Globe,
   Instagram,
@@ -32,6 +33,10 @@ import {
   buildInstagramProfileUrl,
   extractInstagramHandle,
 } from '../utils/formatters';
+import {
+  generateKashmiriWhatsAppTemplate,
+  buildWhatsAppTriggerUrl,
+} from '../services/kashmiriWhatsAppTemplates';
 import { calculateLeadQualification } from '../utils/qualificationScore';
 import { performStrictSocialAudit } from '../utils/strictSocialScorer';
 import { classifyLeadNiche, NICHE_DEFINITIONS } from '../utils/nicheClassifier';
@@ -55,8 +60,8 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   isSelected,
   onToggleSelect,
 }) => {
-  const primaryPitch = lead.pitches?.[0]?.message;
-  const whatsappUrl = buildWhatsAppLink(lead.phone, primaryPitch);
+  const primaryPitch = lead.pitches?.[0]?.message || generateKashmiriWhatsAppTemplate(lead);
+  const whatsappUrl = buildWhatsAppTriggerUrl(lead.phone, primaryPitch).universalUrl;
 
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [noteText, setNoteText] = useState(lead.notes || '');
@@ -138,16 +143,16 @@ export const LeadCard: React.FC<LeadCardProps> = ({
 
   return (
     <div
-      className={`bg-white dark:bg-slate-900 border rounded-xl p-5 transition-all flex flex-col justify-between h-full relative group ${
+      className={`bg-white dark:bg-slate-900/95 border rounded-xl p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full relative group shadow-2xs dark:shadow-md dark:shadow-black/20 ${
         isSelected
-          ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900 shadow-sm bg-indigo-50/20 dark:bg-indigo-950/20'
-          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
+          ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900 shadow-sm bg-indigo-50/20 dark:bg-indigo-950/30'
+          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
       }`}
     >
       <div>
         {/* Top bar: Checkbox, Category, Status, Score, Star, Delete */}
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2 mb-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {onToggleSelect && (
               <input
                 type="checkbox"
@@ -193,15 +198,15 @@ export const LeadCard: React.FC<LeadCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800/80">
             {/* Star Option Button: Automatically stars when pitched, or manually toggled */}
             <button
               type="button"
               onClick={handleToggleStar}
-              className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 text-xs font-medium ${
+              className={`p-1.5 sm:px-2 sm:py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 text-xs font-medium ${
                 isPitched
                   ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-2xs'
-                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-amber-500 hover:border-amber-300'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-300 hover:border-amber-300'
               }`}
               title={
                 isPitched
@@ -217,7 +222,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
                     : 'text-slate-400 dark:text-slate-500'
                 }`}
               />
-              <span className="text-[11px] hidden sm:inline font-semibold">
+              <span className="text-[11px] font-semibold">
                 {isPitched ? 'Pitched ★' : 'Star'}
               </span>
             </button>
@@ -238,7 +243,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
                   e.stopPropagation();
                   onDeleteLead(lead);
                 }}
-                className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors opacity-70 group-hover:opacity-100 cursor-pointer"
+                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors opacity-70 group-hover:opacity-100 cursor-pointer"
                 title="Delete this lead"
                 aria-label={`Delete ${lead.name}`}
               >
@@ -265,15 +270,15 @@ export const LeadCard: React.FC<LeadCardProps> = ({
         </div>
 
         {/* Guaranteed WhatsApp Contact Strip */}
-        <div className="flex items-center justify-between bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-lg px-2.5 py-1.5 mb-2.5">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-900 dark:text-emerald-200 font-medium truncate">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-lg px-2.5 py-1.5 mb-2.5">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-900 dark:text-emerald-200 font-medium truncate min-w-0">
             <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span className="font-semibold text-[11px] text-emerald-800 dark:text-emerald-300 shrink-0">WhatsApp:</span>
             <span className="font-mono font-bold text-emerald-950 dark:text-emerald-100 text-xs tracking-tight truncate">
               {lead.phone}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             <button
               type="button"
               onClick={(e) => {
@@ -287,7 +292,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
               className="inline-flex items-center gap-1 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded text-[10px] font-medium transition-colors cursor-pointer"
               title="Copy WhatsApp number"
             >
-              {copiedPhone ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+              {copiedPhone ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />}
               <span>{copiedPhone ? 'Copied' : 'Copy'}</span>
             </button>
             {whatsappUrl && (
@@ -299,7 +304,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
                   e.stopPropagation();
                   handleWhatsAppPitch();
                 }}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-2xs transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-2xs transition-colors"
                 title="Direct WhatsApp chat - automatically marks as Pitched ★"
               >
                 <MessageCircle className="w-3 h-3" />
@@ -318,13 +323,34 @@ export const LeadCard: React.FC<LeadCardProps> = ({
           </div>
         )}
 
+        {/* Simple Status Tracker with Local State Management */}
+        <div className="mb-2.5">
+          <LeadStatusTracker
+            leadId={lead.id}
+            leadName={lead.name}
+            currentStatus={lead.status}
+            onStatusChange={(newStatus) => {
+              onStatusChange(lead.id, newStatus);
+              if (newStatus === 'contacted' || newStatus === 'interested') {
+                onUpdateLead?.(lead.id, {
+                  status: newStatus,
+                  hasBeenPitched: true,
+                  pitchedAt: lead.pitchedAt || new Date().toISOString(),
+                });
+              } else {
+                onUpdateLead?.(lead.id, { status: newStatus });
+              }
+            }}
+          />
+        </div>
+
         {/* Sales Opportunity Summary */}
         <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg p-2.5 mb-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             <TrendingUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>Opportunity:</span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
             {lead.opportunity?.summary || 'Standard business sales opportunity.'}
           </p>
         </div>

@@ -34,6 +34,16 @@ export const PIPELINE_STATUS_CONFIG: Record<LeadStatus, StatusOption> = {
     border: 'border-indigo-200 dark:border-indigo-800/70',
     hoverBg: 'hover:bg-indigo-50/70 dark:hover:bg-indigo-950/70',
   },
+  interested: {
+    value: 'interested',
+    label: 'Interested',
+    description: 'Prospect showed interest, requested demo or pricing',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/50',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
+    border: 'border-emerald-200 dark:border-emerald-800/70',
+    hoverBg: 'hover:bg-emerald-50/70 dark:hover:bg-emerald-950/70',
+  },
   qualified: {
     value: 'qualified',
     label: 'Qualified',
@@ -99,6 +109,7 @@ export const PIPELINE_STATUS_CONFIG: Record<LeadStatus, StatusOption> = {
 export const ORDERED_PIPELINE_STATUSES: LeadStatus[] = [
   'new',
   'contacted',
+  'interested',
   'qualified',
   'lost',
   'discovered',

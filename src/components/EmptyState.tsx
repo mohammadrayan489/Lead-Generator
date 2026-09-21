@@ -13,22 +13,22 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPreset }) => {
         <Target className="w-7 h-7" />
       </div>
 
-      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60 mb-3">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 mb-3">
         <MapPin className="w-3.5 h-3.5" />
-        <span>Jammu & Kashmir Regional Engine</span>
+        <span>Kashmir Valley Exclusive Engine</span>
       </div>
 
-      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-        Discover Qualified J&K Business Leads
+      <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        Discover Qualified Kashmir Business Leads
       </h3>
-      <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
-        Specialized lead discovery across Srinagar, Jammu, and the Kashmir Valley. Verifies local phone numbers, Instagram engagement, website status, and crafts instant WhatsApp sales pitches.
+      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-6 sm:mb-8 leading-relaxed max-w-lg mx-auto">
+        Specialized lead discovery strictly across Srinagar and the Kashmir Valley. Verifies direct WhatsApp contacts, Instagram engagement, web presence, and generates tailored pitches.
       </p>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 text-left shadow-xs">
+      <div className="bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-left shadow-sm backdrop-blur-xs">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-          <Sparkles className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-          <span>Try a sample Jammu & Kashmir prompt:</span>
+          <Sparkles className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+          <span>Try a sample Kashmir prompt:</span>
         </div>
 
         <div className="space-y-2">

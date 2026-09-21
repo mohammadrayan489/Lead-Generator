@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Star,
   CheckCircle2,
+  Flame,
 } from 'lucide-react';
 
 export type NicheId =
@@ -27,7 +28,7 @@ export type NicheId =
   | 'hospitality_tourism'
   | 'other';
 
-export type LeadOutreachStage = 'new' | 'pitched' | 'contacted' | 'qualified';
+export type LeadOutreachStage = 'new' | 'pitched' | 'contacted' | 'interested' | 'qualified';
 
 export interface NicheDefinition {
   id: NicheId;
@@ -247,11 +248,14 @@ export function classifyLeadNiche(lead: Lead): NicheId {
  * - 'new': Fresh / Discovered / Verified / New lead waiting to be pitched
  */
 export function getLeadOutreachStage(lead: Lead): LeadOutreachStage {
-  if (lead.isStarred || lead.hasBeenPitched || lead.pitchedAt) {
-    return 'pitched';
+  if (lead.status === 'interested') {
+    return 'interested';
   }
   if (lead.status === 'qualified') {
     return 'qualified';
+  }
+  if (lead.isStarred || lead.hasBeenPitched || lead.pitchedAt) {
+    return 'pitched';
   }
   if (lead.status === 'contacted') {
     return 'contacted';
@@ -313,16 +317,29 @@ export const STAGE_DEFINITIONS: Record<LeadOutreachStage, StageDefinition> = {
     },
     description: 'In active communication with follow-up conversations',
   },
+  interested: {
+    id: 'interested',
+    label: 'Interested & Warm Leads',
+    badgeLabel: 'Interested',
+    icon: Flame,
+    colorClasses: {
+      bg: 'bg-emerald-50 dark:bg-emerald-950/50',
+      text: 'text-emerald-700 dark:text-emerald-300',
+      border: 'border-emerald-200 dark:border-emerald-800/80',
+      pill: 'bg-emerald-600 text-white',
+    },
+    description: 'Clients who showed positive interest, requested quotes or digital catalogs',
+  },
   qualified: {
     id: 'qualified',
     label: 'Qualified / Won',
     badgeLabel: 'Qualified',
     icon: CheckCircle2,
     colorClasses: {
-      bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-      text: 'text-emerald-700 dark:text-emerald-300',
-      border: 'border-emerald-200 dark:border-emerald-800/80',
-      pill: 'bg-emerald-600 text-white',
+      bg: 'bg-teal-50 dark:bg-teal-950/50',
+      text: 'text-teal-700 dark:text-teal-300',
+      border: 'border-teal-200 dark:border-teal-800/80',
+      pill: 'bg-teal-600 text-white',
     },
     description: 'Verified clients interested in digital catalog deployment',
   },

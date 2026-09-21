@@ -43,6 +43,12 @@ const STATUS_CONFIG: Record<LeadStatus, { label: string; bg: string; text: strin
     text: 'text-indigo-700 dark:text-indigo-300',
     dot: 'bg-indigo-500',
   },
+  interested: {
+    label: 'Interested',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/50',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
+  },
   lost: {
     label: 'Lost',
     bg: 'bg-rose-50 dark:bg-rose-950/50',

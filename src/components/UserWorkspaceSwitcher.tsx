@@ -71,33 +71,33 @@ export const UserWorkspaceSwitcher: React.FC<UserWorkspaceSwitcherProps> = ({
           setIsCreating(false);
           setErrorMsg(null);
         }}
-        className="group inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer text-xs"
+        className="group inline-flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer text-xs"
         title="Switch active user or create new user"
       >
-        <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-[10px]">
+        <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-[10px] shrink-0">
           {currentUser.name.charAt(0).toUpperCase()}
         </div>
 
-        <div className="flex flex-col text-left">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[120px] sm:max-w-[160px]">
+        <div className="flex flex-col text-left min-w-0">
+          <div className="flex items-center gap-1">
+            <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[70px] sm:max-w-[140px]">
               {currentUser.name}
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Supabase Sync Ready" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" title="Supabase Sync Ready" />
           </div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[130px]">
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[130px] hidden sm:block">
             id: {currentUser.id}
           </span>
         </div>
 
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
         <div
           id="user-workspace-switcher-menu"
-          className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100"
+          className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100"
         >
           {/* Header Info */}
           <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
